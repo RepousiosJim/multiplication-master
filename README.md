@@ -1,79 +1,67 @@
-﻿# 🚀 Multiplication Master
+﻿# ✖ Multiplication Master
 
-A kid-friendly multiplication practice game for ages 6–10, built for browser-only play. Open `index.html` in any modern browser and start learning.
+A fun, kid-friendly multiplication practice game for ages 6–10. Runs entirely in the browser — no install, no server, just open the HTML file.
 
 ![Game Screenshot](https://img.shields.io/badge/platform-browser-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
 ## Play it
 
-**Offline:** open `index.html` directly.
-**Online:** publish this repo (GitHub Pages) and serve the same `index.html`.
+**[▶ Play Online](https://repousiosjim.github.io/multiplication-master/)** — or download `multiplication-master.html` and open it in any browser.
 
 ## Features
 
 ### 🎮 Game
-- **10 progressive levels** — focused tables from ×1 to ×10
-- **Per-level mastery** — each level uses `a × 1..10` for its table
-- **Unlock flow** — complete all 10 facts in a level to unlock the next
-- **Lives system** — 3 hearts per round; wrong answer loses one
-- **Streak tracking** — bonuses scale with streak length
-- **Coins economy** — earn 🪙 coins with streak multipliers
+- **8 progressive levels** — from ×1 & ×2 basics up to full mixed tables
+- **Lives system** — 3 hearts per round, lose one per wrong answer
+- **Streak tracking** — build combos for bonus coins and celebrations
+- **Coins economy** — earn 🪙 coins per correct answer, with streak bonuses
 
 ### 🧒 Kid-Friendly
-- **Answer modes** — Type mode and 4-choice mode
-- **Fast Mode / Slow Mode** — toggle auto-submit behavior for typed answers
-- **Bright theme** — light theme available for classroom readability
-- **Responsive UI** — touch-friendly controls and adaptable layouts
-- **No custom keypad** — uses normal keyboard input for typing mode
+- **Multiple choice mode** — 4 large answer buttons instead of typing (great for ages 6–8)
+- **Custom numpad** — on-screen number pad, no mobile keyboard pop-up
+- **Friendly level names** — "Easy Start", "Level Up!", "Hard Mode" instead of dry table notation
+- **☀️ Bright Mode** — pastel light theme for classrooms or sensitive eyes
 
-### 🥳 Celebrations
-- **🦊 Animated mascot** — happy / sad / dance states
-- **Milestone feedback** — streak banners at 3, 5, and 10
-- **Correct feedback** — mini burst particles and result star animation
-- **Wrong feedback** — overlay with correct equation
+### 🎉 Celebrations
+- **🦊 Mascot** — a fox that bounces on correct answers, droops on wrong ones, and dances on big streaks
+- **Milestone flashes** — full-screen "ON FIRE! 🔥", "UNSTOPPABLE! ⚡", "MATH WIZARD! 🧙" at streak milestones
+- **Mini particle bursts** — colorful confetti on every correct answer
+- **Star fanfare** — stars animate in one by one on the results screen
 
 ### 📊 Stats
-- **Mastery map** — 10×10 progress grid with solved status
-- **Level performance** — attempts, accuracy, average speed, best streak
-- **Answer log** — recent question-by-question history
-- **Focus list** — suggests weak/untried facts from the next target level
+- **Mastery map** — 10×10 grid showing which facts you've mastered, are learning, or struggling with
+- **Level performance** — accuracy % and average speed per level
+- **Answer log** — review every question from the last round
 
 ## How to Play
 
-1. Pick a level (start at Level 1).
-2. Answer each question before hearts run out.
-3. Master all 10 facts to unlock the next level.
-4. Keep building streaks for faster coin rewards.
-5. Check My Stats for weak facts and trend tracking.
+1. Choose a level (start with Level 1 — Easy Start 🌟)
+2. Answer multiplication questions before you run out of hearts
+3. Get 10+ correct to unlock the next level and earn stars
+4. Build streaks for bonus coins and special celebrations
+5. Check your Stats to see which facts need more practice
 
 ## Levels
 
-| Level | Name  | Table |
-|---|---|---|
-| 1 | Ones | ×1 |
-| 2 | Twos | ×2 |
-| 3 | Threes | ×3 |
-| 4 | Fours | ×4 |
-| 5 | Fives | ×5 |
-| 6 | Sixes | ×6 |
-| 7 | Sevens | ×7 |
-| 8 | Eights | ×8 |
-| 9 | Nines | ×9 |
-| 10 | Tens | ×10 |
+| Level | Name | Tables |
+|-------|------|--------|
+| 1 | Easy Start | �1 & �2 |
+| 2 | Getting Warmer | �3 & �4 |
+| 3 | Level Up! | �5 & �10 |
+| 4 | Mix It Up | Mixed Easy |
+| 5 | Bracing for Impact | �6 & �7 |
+| 6 | Hard Mode 2 | �8 & �9 |
+| 7 | Hard Mode | Mixed Hard |
+| 8 | FULL BLAST 💥 | All tables |
 
 ## Tech
 
-- **Pure HTML/CSS/JS** — `index.html` + `app.js`, no dependencies
-- **localStorage** — progress is saved in-browser
-- **Google Fonts** — Fredoka One + Nunito
-
-## Storage keys
-
-- `mm_data` — progress, coins, level unlocks, and fact statistics
-- `mm_mode` — answer mode (`type` or `choice`)
-- `mm_fast_mode` — fast-mode preference
-- `mm_theme` — theme preference (`light` or `dark`)
+- **Pure HTML/CSS/JS** — single file, zero dependencies, zero build step
+- **localStorage** — progress and coins persist across sessions
+- **Fonts** — Fredoka One + Nunito via Google Fonts
 
 ## License
 
-MIT
+MIT — do whatever you want with it.
+
+

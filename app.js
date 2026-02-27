@@ -1,76 +1,33 @@
 ﻿/* ===================== DATA ===================== */
 const LEVELS = [
-  // Each level now focuses on one times-table from 1x1..1x10 to 10x1..10x10.
-  { name:'×1',  friendly:'Ones',    color:'#f59e0b', tables:[1],  hint:'1s across the table' },
-  { name:'×2',  friendly:'Twos',    color:'#10b981', tables:[2],  hint:'2s from 1 to 10' },
-  { name:'×3',  friendly:'Threes',  color:'#3b82f6', tables:[3],  hint:'3s from 1 to 10' },
-  { name:'×4',  friendly:'Fours',   color:'#ec4899', tables:[4],  hint:'4s from 1 to 10' },
-  { name:'×5',  friendly:'Fives',   color:'#8b5cf6', tables:[5],  hint:'5s from 1 to 10' },
-  { name:'×6',  friendly:'Sixes',   color:'#f97316', tables:[6],  hint:'6s from 1 to 10' },
-  { name:'×7',  friendly:'Sevens',  color:'#06b6d4', tables:[7],  hint:'7s from 1 to 10' },
-  { name:'×8',  friendly:'Eights',  color:'#ef4444', tables:[8],  hint:'8s from 1 to 10' },
-  { name:'×9',  friendly:'Nines',   color:'#14b8a6', tables:[9],  hint:'9s from 1 to 10' },
-  { name:'×10', friendly:'Tens',    color:'#a855f7', tables:[10], hint:'10s from 1 to 10' },
+  // Progression: easy -> medium -> hard (hardest tables prioritize 6, 7, 8).
+  { name:'�1 & �2',  friendly:'Easy Start',         color:'#f59e0b', tables:[1,2] },
+  { name:'�3 & �4',  friendly:'Getting Warmer',     color:'#10b981', tables:[3,4] },
+  { name:'�5 & �10', friendly:'Level Up!',          color:'#3b82f6', tables:[5,10] },
+  { name:'Mixed Easy',friendly:'Mix It Up',         color:'#8b5cf6', tables:[1,2,3,4,5,10] },
+  { name:'�6 & �7',  friendly:'Bracing for Impact', color:'#ec4899', tables:[6,7] },
+  { name:'�8 & �9',  friendly:'Hard Mode 2',        color:'#f97316', tables:[8,9] },
+  { name:'Mixed Hard',friendly:'Hard Mode',         color:'#06b6d4', tables:[6,7,8] },
+  { name:'Full Blast!',friendly:'FULL BLAST',       color:'#ef4444', tables:[1,2,3,4,5,6,7,8,9,10] },
 ];
+const TOTAL_Q = 15;
+let answerMode = 'type'; // 'type' | 'choice'
 let fastMode = false;
-let masteryFilter = 'all';
 const APP_SCREEN = {
   HOME: 'home',
   GAME: 'game',
   RESULTS: 'results',
   STATS: 'stats',
 };
-const QUESTION_TIMER_TICK_MS = 250;
-const DATA_SAVE_DEBOUNCE_MS = 600;
-const MAX_ANSWER_LOG_ROWS = 30;
-const EFFECTS_CONFIG = {
-  confettiPieces: 24,
-  miniBurstPieces: 8,
-  starDropSpacingMs: 280,
-};
-const REQUIRED_APP_IDS = [
-  'app',
-  'screen-home',
-  'screen-game',
-  'screen-results',
-  'screen-stats',
-  'level-grid',
-  'answer-input',
-  'answer-row',
-  'choice-row',
-  'submit-btn',
-  'question-display',
-  'question-card',
-  'confirm-overlay',
-  'confirm-accept-btn',
-  'confirm-cancel-btn',
-  'mode-toggle',
-  'theme-btn',
-  'fast-mode-btn',
-  'home-stats-btn',
-  'home-reset-btn',
-  'game-quit-btn',
-  'results-home-btn',
-  'btn-next-level',
-  'retry-level-btn',
-  'stats-back-btn',
-];
 
 const STORAGE_KEYS = {
   data: 'mm_data',
   mode: 'mm_mode',
   fastMode: 'mm_fast_mode',
+  motion: 'mm_motion',
   theme: 'mm_theme',
 };
-const ANSWER_MODES = {
-  TYPE: 'type',
-  CHOICE: 'choice',
-};
-let answerMode = ANSWER_MODES.TYPE; // 'type' | 'choice'
 const inMemoryStorage = new Map();
-const uiCache = new Map();
-let dataSaveTimer = null;
-let pendingData = null;
 let storageAvailable = true;
 
 function isStorageAvailable() {
@@ -129,18 +86,8 @@ function getStorageBool(key) {
 }
 const FACT_MIN = 1;
 const FACT_MAX = 10;
+const PASS_THRESHOLD = 10;
 const MAX_LIVES = 3;
-const FACT_CACHE = (() => {
-  const pairs = [];
-  for (let a = FACT_MIN; a <= FACT_MAX; a++) {
-    for (let b = FACT_MIN; b <= FACT_MAX; b++) {
-      const key = `${a}x${b}`;
-      pairs.push(key);
-    }
-  }
-  return { pairs };
-})();
-const TOTAL_FACT_KEYS = FACT_CACHE.pairs;
 const UI_ICON = {
   coin: '🪙',
   fire: '🔥',
@@ -151,26 +98,16 @@ const UI_ICON = {
   spark: '✨',
   timer: '⏱',
   heart: '❤️',
-  heartEmpty: '🤍',
-  arrow: '➡',
-  lock: '🔒'
+  heartEmpty: '🖤',
+  arrow: '➜',
+  lock: '🔓'
 };
-const LEVEL_QUESTION_SETS = LEVELS.map((lvl) => {
-  if (!lvl || !Array.isArray(lvl.tables)) return [];
-  const pool = [];
-  lvl.tables.forEach((table) => {
-    for (let b = FACT_MIN; b <= FACT_MAX; b++) {
-      pool.push([table, b]);
-    }
-  });
-  return pool;
-});
+
 /* ===================== STATE ===================== */
 let gameState = {
   currentLevel: 0,
   questions: [],
   qIndex: 0,
-  totalQuestions: 0,
   results: [],
   streak: 0,
   maxStreak: 0,
@@ -179,47 +116,18 @@ let gameState = {
   activeQuestion: 0,
   fastModeUsed: false,
   isQuestionLocked: false,
-  masteredFactKeys: new Set(),
   currentA: 0,
   currentB: 0,
   lives: MAX_LIVES,
   maxLives: MAX_LIVES,
   screen: APP_SCREEN.HOME,
   isActiveSession: false,
-  timerLastText: null,
 };
-let confirmReturnFocus = null;
-let cachedChoiceButtons = null;
-let cachedScreens = null;
-let activeScreenNode = null;
-let appDataCache = null;
 
 // ===================== HELPERS =====================
 // Small DOM convenience wrappers used by most screen flows.
 function el(id) {
-  if (uiCache.has(id)) return uiCache.get(id);
-  const node = document.getElementById(id);
-  uiCache.set(id, node);
-  return node;
-}
-
-function setText(nodeOrId, value) {
-  const node = typeof nodeOrId === 'string' ? el(nodeOrId) : nodeOrId;
-  if (!node) return;
-  node.textContent = value;
-}
-
-function replaceChildrenWithFragment(target, nodes) {
-  if (!target) return;
-  const fragment = document.createDocumentFragment();
-  nodes.forEach((node) => {
-    if (node) fragment.appendChild(node);
-  });
-  target.replaceChildren(fragment);
-}
-
-function formatCoins(value) {
-  return `${UI_ICON.coin} ${coerceNumber(value, 0)}`;
+  return document.getElementById(id);
 }
 
 // Fetches the current answer field used by both typing and choice workflows.
@@ -240,27 +148,6 @@ function syncFastModeFromStorage() {
 // Returns true only while the user is actively playing in the game screen.
 function isActiveGameplayInput() {
   return gameState.isActiveSession && gameState.screen === APP_SCREEN.GAME;
-}
-function isTypeAnswerMode() {
-  return answerMode === ANSWER_MODES.TYPE;
-}
-function isChoiceAnswerMode() {
-  return answerMode === ANSWER_MODES.CHOICE;
-}
-function getModeButtonLabel() {
-  return isTypeAnswerMode() ? '⌨️ Type' : '📌 Pick';
-}
-function getChoiceButtons() {
-  if (cachedChoiceButtons === null) {
-    cachedChoiceButtons = Array.from(document.querySelectorAll('.choice-btn'));
-  }
-  return cachedChoiceButtons;
-}
-function getCachedScreens() {
-  if (cachedScreens === null) {
-    cachedScreens = Array.from(document.querySelectorAll('.screen'));
-  }
-  return cachedScreens;
 }
 
 /* ===================== STORAGE ===================== */
@@ -301,105 +188,47 @@ function loadData() {
   const raw = getStorageValue(STORAGE_KEYS.data);
   try { return JSON.parse(raw || '{}'); } catch { return {}; }
 }
-function createDefaultData() {
-  const factStats = {};
-  for (let i = 0; i < TOTAL_FACT_KEYS.length; i++) {
-    factStats[TOTAL_FACT_KEYS[i]] = { attempts: 0, correct: 0 };
-  }
-  return {
-    unlocked: [...UNLOCK_DEFAULTS],
-    levelStats: Array.from({ length: LEVEL_COUNT }, () => normalizeLevelStat()),
-    factStats,
-    coins: 0,
-  };
-}
-function hydrateData(raw) {
-  const src = raw && typeof raw === 'object' ? raw : {};
-  const d = createDefaultData();
-  d.coins = coerceNumber(src.coins, 0);
-  if (d.coins < 0) d.coins = 0;
-  d.unlocked = normalizeBooleanArray(src.unlocked, UNLOCK_DEFAULTS);
-  // Enforce strict in-order progression: a level can only be open if the previous one is open.
-  for (let i = 1; i < d.unlocked.length; i++) {
-    if (!d.unlocked[i - 1]) d.unlocked[i] = false;
-  }
-  if (Array.isArray(src.levelStats)) {
-    src.levelStats.forEach((stat, i) => {
-      if (i < LEVEL_COUNT && stat) {
-        d.levelStats[i] = normalizeLevelStat(stat);
-      }
-    });
-  }
-  if (src.factStats && typeof src.factStats === 'object') {
-    TOTAL_FACT_KEYS.forEach((key) => {
-      d.factStats[key] = normalizeFactStat(src.factStats[key]);
-    });
-  }
-  return d;
-}
 function saveData(d) {
   setStorageValue(STORAGE_KEYS.data, JSON.stringify(d));
 }
-function queueSaveData(d) {
-  appDataCache = d;
-  pendingData = d;
-  if (dataSaveTimer) {
-    clearTimeout(dataSaveTimer);
-  }
-  dataSaveTimer = setTimeout(() => {
-    saveData(appDataCache || pendingData);
-    pendingData = null;
-    dataSaveTimer = null;
-  }, DATA_SAVE_DEBOUNCE_MS);
-}
-function flushQueuedSave() {
-  if (!dataSaveTimer) return;
-  clearTimeout(dataSaveTimer);
-  dataSaveTimer = null;
-  if (pendingData) {
-    saveData(appDataCache || pendingData);
-    pendingData = null;
-  }
-}
 function getData() {
-  if (appDataCache) return appDataCache;
-  appDataCache = hydrateData(loadData());
-  return appDataCache;
+  let d = loadData();
+  d.unlocked = normalizeBooleanArray(d.unlocked, UNLOCK_DEFAULTS);
+  d.levelStats = Array.from({ length: LEVEL_COUNT }, (_, i) => normalizeLevelStat(d.levelStats?.[i]));
+  if (!d.factStats || typeof d.factStats !== 'object') d.factStats = {};
+  for(let a=FACT_MIN;a<=FACT_MAX;a++) {
+    for(let b=FACT_MIN;b<=FACT_MAX;b++) {
+      const key = `${a}x${b}`;
+      d.factStats[key] = normalizeFactStat(d.factStats[key]);
+    }
+  }
+  d.coins = coerceNumber(d.coins, 0);
+  if (d.coins < 0) d.coins = 0;
+  return d;
 }
 
 function resetAll() {
   removeStorageValue(STORAGE_KEYS.data);
   removeStorageValue(STORAGE_KEYS.mode);
   removeStorageValue(STORAGE_KEYS.fastMode);
+  removeStorageValue(STORAGE_KEYS.motion);
   removeStorageValue(STORAGE_KEYS.theme);
-  if (dataSaveTimer) {
-    clearTimeout(dataSaveTimer);
-    dataSaveTimer = null;
-  }
-  pendingData = null;
-  appDataCache = createDefaultData();
-  answerMode = ANSWER_MODES.TYPE;
+  answerMode = 'type';
   fastMode = false;
+  reduceMotion = false;
   document.body.classList.remove('light');
+  document.body.classList.remove('motion-off');
   renderHome();
   updateModeText();
   updateFastModeButton();
+  updateMotionButton();
 }
 
 function toggleMode() {
-  answerMode = isTypeAnswerMode() ? ANSWER_MODES.CHOICE : ANSWER_MODES.TYPE;
+  answerMode = answerMode === 'type' ? 'choice' : 'type';
   const btn = el('mode-toggle');
-  if (btn) btn.textContent = getModeButtonLabel();
+  if (btn) btn.textContent = answerMode === 'type' ? '⌨️ Type' : '🔘 Pick';
   setStorageValue(STORAGE_KEYS.mode, answerMode);
-  if (isActiveGameplayInput()) {
-    syncGameAnswerMode();
-    const firstChoice = getChoiceButtons()[0];
-    if (isTypeAnswerMode()) {
-      focusAnswerInput();
-    } else if (firstChoice) {
-      firstChoice.focus();
-    }
-  }
 }
 
 function toggleFastMode() {
@@ -426,110 +255,50 @@ function expectedAnswerLength() {
   return getCurrentAnswerLength();
 }
 
-// Build the full learning set for a level so every one of its multiples is asked.
-function getLevelQuestionSet(levelIdx) {
-  return LEVEL_QUESTION_SETS[levelIdx] || [];
-}
-
-function makeFactKey(a, b) {
-  return `${a}x${b}`;
-}
-
 /* ===================== RENDER HOME ===================== */
 function renderHome() {
   const d = getData();
   const grid = el('level-grid');
-  const rows = [];
-  const nextUnlockIdx = getNextTargetLevelIndex(d);
-
+  grid.innerHTML = '';
   LEVELS.forEach((lvl,i) => {
     const unlocked = d.unlocked[i];
     const ls = d.levelStats[i];
     const acc = ls.attempts > 0 ? Math.round(ls.correct/ls.attempts*100) : 0;
-    const stars = acc >= 93 ? '⭐⭐⭐' : acc >= 80 ? '⭐⭐' : acc > 0 ? '⭐' : '';
-    const progress = getLevelFactProgress(i);
-    const mastered = progress.mastered || 0;
-    const totalFacts = progress.total || 0;
-    const pct = getPercentValue(mastered, totalFacts);
-    const statusLine = !unlocked ? 'Locked' : mastered >= totalFacts ? 'Mastered' : `${mastered}/${totalFacts} facts`;
-    const hintLine = unlocked ? `${lvl.hint || 'Practice 1-10 × ' + lvl.tables[0]}` : '';
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    const isNextUnlock = i === nextUnlockIdx && !unlocked;
-    btn.className = 'level-btn ' + (unlocked ? 'unlocked' : 'locked') + (isNextUnlock ? ' next-target' : '');
+  const stars = acc >= 93 ? '⭐️⭐️⭐️' : acc >= 80 ? '⭐️⭐️' : acc > 0 ? '⭐️' : '';
+    const btn = document.createElement('div');
+    btn.className = 'level-btn ' + (unlocked ? 'unlocked' : 'locked');
     btn.style.cssText = unlocked
       ? `background:linear-gradient(135deg,${lvl.color}22,${lvl.color}44);border-color:${lvl.color}55;color:${lvl.color}`
       : '';
     if(unlocked) {
-      btn.innerHTML = `
-        <div class="lvl-badge">
-          <div class="lvl-num">${i+1}</div>
-          <div class="lvl-mini">${statusLine}</div>
-        </div>
-        <div class="lvl-name">${lvl.friendly}</div>
-        <div class="lvl-sub">${lvl.name}</div>
-        <div class="lvl-hint">${hintLine}</div>
-        <div class="lvl-progress-wrap">
-          <div class="lvl-progress-track">
-            <div class="lvl-progress-fill" style="width:${pct}%"></div>
-          </div>
-          <div class="lvl-progress-meta">${pct}%</div>
-        </div>
-        <div class="lvl-stars">${stars}</div>
-      `;
-      btn.dataset.levelIndex = String(i);
+      btn.innerHTML = `<div class="lvl-num">${i+1}</div><div class="lvl-name">${lvl.friendly}</div><div class="lvl-sub">${lvl.name}</div><div class="lvl-hint">${lvl.hint || 'Tap to start'}</div><div class="lvl-stars">${stars}</div>`;
+      btn.onclick = () => startLevel(i);
     } else {
-      btn.disabled = true;
-      btn.setAttribute('aria-label', `Locked level ${i + 1}`);
       btn.innerHTML = `<div class="lvl-num" style="opacity:.3">${i+1}</div><div class="lvl-name" style="margin-top:8px">Locked</div>`;
     }
-    rows.push(btn);
+    grid.appendChild(btn);
   });
-  replaceChildrenWithFragment(grid, rows);
-
   const homeCoins = el('home-coins');
-  setText(homeCoins, `${formatCoins(d.coins)} coins`);
+  if (homeCoins) homeCoins.textContent = `🪙 ${d.coins || 0} coins`;
   const themeBtn = el('theme-btn');
   if (themeBtn) themeBtn.textContent = document.body.classList.contains('light') ? '🌙 Dark' : '☀️ Bright';
 }
 
-function focusAnswerInput() {
-  const input = getAnswerInput();
-  if (!input) return;
-  if (document.activeElement !== input) input.focus();
-}
-
-function syncGameAnswerMode() {
-  const isChoice = isChoiceAnswerMode();
-  const answerRow = el('answer-row');
-  const choiceRow = el('choice-row');
-  const submitBtn = el('submit-btn');
-  if (answerRow) answerRow.style.display = isChoice ? 'none' : '';
-  if (choiceRow) choiceRow.style.display = isChoice ? '' : 'none';
-  if (submitBtn) submitBtn.style.display = isChoice ? 'none' : '';
-
-  if (!isChoice || !gameState.isActiveSession || gameState.screen !== APP_SCREEN.GAME) return;
-
-  const correct = gameState.currentA * gameState.currentB;
-  const choices = generateChoices(correct);
-  const btns = getChoiceButtons();
-  btns.forEach((btn, i) => {
-    btn.textContent = choices[i];
-    btn.className = 'choice-btn';
-    btn.dataset.val = choices[i];
-  });
-  setChoiceButtonsEnabled(true);
-}
-
-function setChoiceButtonsEnabled(enabled) {
-  getChoiceButtons().forEach((btn) => {
-    btn.disabled = !enabled;
-  });
-}
-
 /* ===================== GENERATE QUESTIONS ===================== */
 function generateQuestions(levelIdx) {
-  return shuffleArray(getLevelQuestionSet(levelIdx));
+  const tables = LEVELS[levelIdx].tables;
+  let pool = [];
+  tables.forEach(t => {
+    for(let b=FACT_MIN;b<=FACT_MAX;b++) pool.push([t,b]);
+  });
+  if (pool.length === 0) return [];
+  // shuffle each block and repeat until we have enough questions
+  const shuffledBlock = shuffleArray(pool);
+  let result = [];
+  while(result.length < TOTAL_Q) {
+    result.push(...shuffleArray(shuffledBlock));
+  }
+  return result.slice(0, TOTAL_Q);
 }
 
 function generateChoices(correct) {
@@ -562,10 +331,8 @@ function beginGameSession(levelIdx) {
   updateFastModeButton();
   gameState.currentLevel = levelIdx;
   gameState.questions = generateQuestions(levelIdx);
-  gameState.totalQuestions = gameState.questions.length;
   gameState.qIndex = 0;
   gameState.results = [];
-  gameState.masteredFactKeys = new Set();
   gameState.streak = 0;
   gameState.maxStreak = 0;
   resetFastModeForQuestion();
@@ -577,7 +344,6 @@ function beginGameSession(levelIdx) {
 }
 
 function endGameSession() {
-  flushQueuedSave();
   gameState.activeQuestion++;
   gameState.isActiveSession = false;
   clearQuestionTimer();
@@ -591,10 +357,10 @@ function startLevel(idx) {
   // Build session state, switch to game UI, and render the first math challenge.
   beginGameSession(idx);
 
-  setText('game-level-badge', `Level ${idx+1} — ${LEVELS[idx].name}`);
+  el('game-level-badge').textContent = `Level ${idx+1} — ${LEVELS[idx].name}`;
   showScreen(APP_SCREEN.GAME);
   loadQuestion();
-  setText('coin-badge', formatCoins(d.coins));
+  el('coin-badge').textContent = `🪙 ${d.coins || 0}`;
 }
 
 function loadQuestion() {
@@ -614,7 +380,6 @@ function loadQuestion() {
   resetFastModeForQuestion();
   const answerLen = expectedAnswerLength();
   gameState.questionStart = Date.now();
-  gameState.timerLastText = null;
 
   el('question-display').textContent = `${a} × ${b} = ?`;
   el('feedback-row').innerHTML = '';
@@ -626,36 +391,36 @@ function loadQuestion() {
   answerInput.focus();
 
   renderGameHUD();
-  syncGameAnswerMode();
+
+  // Show/hide type vs choice UI
+  const isChoice = answerMode === 'choice';
+  el('answer-row').style.display = isChoice ? 'none' : '';
+  el('choice-row').style.display = isChoice ? '' : 'none';
+  el('submit-btn').style.display = isChoice ? 'none' : '';
+
+  if (isChoice) {
+    const correct = gameState.currentA * gameState.currentB;
+    const choices = generateChoices(correct);
+    const btns = document.querySelectorAll('.choice-btn');
+    btns.forEach((btn, i) => {
+      btn.textContent = choices[i];
+      btn.className = 'choice-btn';
+      btn.dataset.val = choices[i];
+      btn.onclick = function() { submitChoice(this); };
+    });
+  }
 
   startQuestionTimer(questionSession);
 }
 
-function getLevelProgressLabel(levelIdx) {
-  const level = LEVELS[levelIdx];
-  if (!level || !Array.isArray(level.tables) || level.tables.length === 0) return '';
-  const unique = Array.from(new Set(level.tables)).sort((a, b) => a - b);
-  if (unique.length === 1) {
-    const t = unique[0];
-    return `${t}×${FACT_MIN}-${FACT_MAX}`;
-  }
-  return unique.map(t => `${t}×${FACT_MIN}-${FACT_MAX}`).join(', ');
-}
-
-function getPercentValue(done, total) {
-  return total > 0 ? Math.round((done / total) * 100) : 0;
-}
-
 function updateProgress() {
-  const total = Math.max(1, gameState.totalQuestions);
-  const done = Math.min(gameState.masteredFactKeys.size, total);
-  const pct = getPercentValue(done, total);
-  const levelText = getLevelProgressLabel(gameState.currentLevel);
+  const done = gameState.qIndex;
+  const pct = (done/TOTAL_Q)*100;
   el('progress-bar').style.width = pct+'%';
-  el('progress-text').textContent = `${done}/${total} mastered ${levelText ? `(${levelText})` : ''}`;
+  el('progress-text').textContent = `${done}/${TOTAL_Q}`;
   el('streak-badge').textContent = `${UI_ICON.fire} ${gameState.streak}`;
   const qCount = el('question-count');
-  if (qCount) qCount.textContent = `Fact ${Math.min(gameState.qIndex + 1, total)}/${total}`;
+  if (qCount) qCount.textContent = `Q ${Math.min(done + 1, TOTAL_Q)}/${TOTAL_Q}`;
 }
 
 function updateLives() {
@@ -673,7 +438,6 @@ function clearQuestionTimer() {
     clearInterval(gameState.timerInterval);
     gameState.timerInterval = null;
   }
-  gameState.timerLastText = null;
 }
 
 function startQuestionTimer(questionSession) {
@@ -684,24 +448,22 @@ function startQuestionTimer(questionSession) {
       return;
     }
     const elapsed = ((Date.now() - gameState.questionStart)/1000).toFixed(1);
-    if (gameState.timerLastText === elapsed) return;
-    gameState.timerLastText = elapsed;
-    setText('timer-display', `${UI_ICON.timer} ${elapsed}s`);
-  }, QUESTION_TIMER_TICK_MS);
+    el('timer-display').textContent = `⏱ ${elapsed}s`;
+  }, 100);
 }
 
 function awardCoins(n) {
   const d = getData();
   d.coins = (d.coins || 0) + n;
-  queueSaveData(d);
-  setText('coin-badge', formatCoins(d.coins));
+  saveData(d);
+  el('coin-badge').textContent = `🪙 ${d.coins}`;
 }
 
 function submitChoice(btn) {
   if (!gameState.isActiveSession || gameState.screen !== APP_SCREEN.GAME) return;
   // Reuse the same grading path as typing by injecting the selected value before submit.
+  document.querySelectorAll('.choice-btn').forEach(b => b.onclick = null);
   el('answer-input').value = btn.dataset.val;
-  setChoiceButtonsEnabled(false);
   submitAnswer();
 }
 
@@ -723,13 +485,13 @@ function submitAnswer() {
   const a = gameState.currentA, b = gameState.currentB;
   const correct = a * b;
   const isCorrect = val === correct;
-  const key = makeFactKey(a, b);
+  const key = `${a}x${b}`;
 
   // Update fact stats
   const d = getData();
   d.factStats[key].attempts++;
   if(isCorrect) d.factStats[key].correct++;
-  queueSaveData(d);
+  saveData(d);
 
   // Record result
   gameState.results.push({ a, b, answer: val, correct: isCorrect, time: elapsed });
@@ -749,8 +511,8 @@ function submitAnswer() {
     }
     const milestones = {
       3: 'ON FIRE! 🔥',
-      5: 'UNSTOPPABLE! 😄',
-      10: 'MATH WIZARD! 🧠'
+      5: 'UNSTOPPABLE! ⚡',
+      10: 'MATH WIZARD! 🧙'
     };
     if (milestones[gameState.streak]) showMilestone(milestones[gameState.streak]);
     miniBurst();
@@ -762,7 +524,6 @@ function submitAnswer() {
     } else {
       awardCoins(1);
     }
-    gameState.masteredFactKeys.add(key);
   } else {
     gameState.streak = 0;
     gameState.lives = Math.max(0, gameState.lives - 1);
@@ -778,20 +539,14 @@ function submitAnswer() {
       setTimeout(() => showResults(), 1400);
       return;
     }
-    gameState.isQuestionLocked = false;
-    input.value = '';
-    input.focus();
-    gameState.questionStart = Date.now();
-    startQuestionTimer(questionSession);
   }
   el('streak-badge').textContent = `${UI_ICON.fire} ${gameState.streak}`;
 
   // Next question after short delay
   setTimeout(() => {
     if (gameState.activeQuestion !== questionSession) return;
-    if (!isCorrect) return;
     gameState.qIndex++;
-    if(gameState.qIndex >= gameState.totalQuestions) {
+    if(gameState.qIndex >= TOTAL_Q) {
       showResults();
     } else {
       loadQuestion();
@@ -804,22 +559,19 @@ function showResults() {
   if (!gameState.isActiveSession || gameState.screen !== APP_SCREEN.GAME) return;
   endGameSession();
   const res = gameState.results;
-  const total = Math.max(1, gameState.totalQuestions);
-  const learnedCount = gameState.masteredFactKeys.size;
   const lvl = gameState.currentLevel;
   const correct = res.filter(r=>r.correct).length;
-  const accuracy = Math.round((correct / Math.max(1, res.length)) * 100);
+  const accuracy = Math.round((correct/TOTAL_Q)*100);
   const times = res.filter(r=>r.correct).map(r=>r.time);
-  const fullyCompleted = learnedCount >= total;
   const avgTime = times.length ? (times.reduce((a,b)=>a+b,0)/times.length/1000).toFixed(1) : '—';
-  const passed = fullyCompleted;
+  const passed = gameState.lives > 0 && correct >= PASS_THRESHOLD;
 
   // Stars
   const starCount = accuracy >= 93 ? 3 : accuracy >= 80 ? 2 : accuracy >= 60 ? 1 : 0;
 
   // Save level stats
   const d = getData();
-  d.levelStats[lvl].attempts += res.length;
+  d.levelStats[lvl].attempts += TOTAL_Q;
   d.levelStats[lvl].correct += correct;
   d.levelStats[lvl].totalTime += times.reduce((a,b)=>a+b,0);
   if(times.length) d.levelStats[lvl].bestTime = Math.min(d.levelStats[lvl].bestTime, Math.min(...times)/1000);
@@ -827,9 +579,10 @@ function showResults() {
 
   // Unlock next
   if(passed && lvl < LEVEL_COUNT - 1) d.unlocked[lvl+1] = true;
-  queueSaveData(d);
+  saveData(d);
 
   // Render
+  // Animate stars dropping in one by one
   const starEl = el('results-stars');
   starEl.textContent = '';
   showScreen(APP_SCREEN.RESULTS);
@@ -842,7 +595,7 @@ function showResults() {
       starEl.style.animation = 'none';
       void starEl.offsetWidth;
       starEl.style.animation = 'star-drop .4s cubic-bezier(.34,1.56,.64,1)';
-    }, 300 + i * EFFECTS_CONFIG.starDropSpacingMs);
+    }, 300 + i * 400);
   }
   if (starCount === 0) setTimeout(() => { starEl.textContent = UI_ICON.spark; }, 300);
 
@@ -850,11 +603,11 @@ function showResults() {
   if(accuracy === 100) { title='Perfect Score! 🏆'; }
   else if(accuracy >= 93) { title='Amazing! 🎉'; }
   else if(accuracy >= 80) { title='Great Job! 👏'; }
-  else if(passed) { title='Good Try! 🧩'; }
-  else { title='Keep Practicing! 🚀'; }
+  else if(passed) { title='Good Try! 💪'; }
+  else { title='Keep Practicing! 🌱'; }
   sub = passed
-    ? `Level ${lvl+1} complete! ${lvl < LEVEL_COUNT - 1 ? 'Level ' + (lvl+2) + ' unlocked! 🔒' : ''}`
-    : `${learnedCount}/${total} facts mastered — solve every ${LEVELS[lvl].name} fact to unlock the next level 🧩`;
+    ? `Level ${lvl+1} complete! ${lvl < LEVEL_COUNT - 1 ? 'Level ' + (lvl+2) + ' unlocked! 🔓' : ''}`
+    : `${correct}/${TOTAL_Q} correct — you ran out of hearts! Try again 💪`;
 
   el('results-title').textContent = title;
   el('results-sub').textContent = sub;
@@ -864,24 +617,17 @@ function showResults() {
 
   // Answer log
   const log = el('answer-log');
-  const rows = [];
-  const recent = res.slice(-MAX_ANSWER_LOG_ROWS);
-  recent.forEach((r) => {
-    const ans = r.correct ? r.a * r.b : `${r.answer} ${UI_ICON.wrong}`;
+  log.innerHTML = res.map(r => {
+    const ans = r.correct ? r.a*r.b : `${r.answer} ${UI_ICON.wrong}`;
     const icon = r.correct ? UI_ICON.check : UI_ICON.wrong;
-    const spd = (r.time / 1000).toFixed(1) + 's';
-    const row = document.createElement('div');
-    const valueStyle = r.correct ? 'var(--correct)' : 'var(--wrong)';
-    row.className = 'answer-log-row';
-    row.innerHTML = `
+    const spd = (r.time/1000).toFixed(1)+'s';
+    return `<div class="answer-log-row">
       <span class="q">${r.a} × ${r.b}</span>
-      <span style="flex:1;text-align:center;font-weight:700;color:${valueStyle}">${ans}</span>
+      <span style="flex:1;text-align:center;font-weight:700;color:${r.correct?'var(--correct)':'var(--wrong)'}">${ans}</span>
       <span class="status">${icon}</span>
       <span class="spd">${spd}</span>
-    `;
-    rows.push(row);
-  });
-  replaceChildrenWithFragment(log, rows);
+    </div>`;
+  }).join('');
 
   // Next level btn
   const btnNext = el('btn-next-level');
@@ -902,26 +648,28 @@ function goHome() {
   renderHome();
 }
 function confirmQuit() {
-  showConfirmDialog({
-    title: 'Quit this round?',
-    text: 'Want to leave now? Your progress is saved and your streak will continue when you return.',
-    acceptText: 'Quit Round',
-    cancelText: 'Keep Playing',
-    onAccept: confirmQuitAction,
-  });
+  const o = el('confirm-overlay');
+  el('confirm-title').textContent = 'Quit this round?';
+  el('confirm-text').textContent = 'Want to leave now? Your progress is saved and your streak will continue when you return.';
+  el('confirm-accept-btn').textContent = 'Quit Round';
+  el('confirm-accept-btn').onclick = confirmQuitAction;
+  el('confirm-cancel-btn').textContent = 'Keep Playing';
+  el('confirm-cancel-btn').onclick = hideConfirmOverlay;
+  o.style.display = 'flex';
 }
 function confirmQuitAction() {
   hideConfirmOverlay();
   goHome();
 }
 function showResetConfirm() {
-  showConfirmDialog({
-    title: 'Reset all progress?',
-    text: 'This clears all level unlocks, streak history, and coins. This action cannot be undone.',
-    acceptText: 'Reset',
-    cancelText: 'Cancel',
-    onAccept: confirmResetAll,
-  });
+  const o = el('confirm-overlay');
+  el('confirm-title').textContent = 'Reset all progress?';
+  el('confirm-text').textContent = 'This clears all level unlocks, streak history, and coins. This action cannot be undone.';
+  el('confirm-accept-btn').textContent = 'Reset';
+  el('confirm-accept-btn').onclick = function(){ confirmResetAll(); };
+  el('confirm-cancel-btn').textContent = 'Cancel';
+  el('confirm-cancel-btn').onclick = hideConfirmOverlay;
+  o.style.display = 'flex';
 }
 function confirmResetAll() {
   hideConfirmOverlay();
@@ -929,284 +677,71 @@ function confirmResetAll() {
 }
 function hideConfirmOverlay() {
   el('confirm-overlay').style.display = 'none';
-  el('confirm-overlay').setAttribute('aria-hidden', 'true');
-  if (confirmReturnFocus && typeof confirmReturnFocus.focus === 'function') {
-    confirmReturnFocus.focus();
-  }
-  confirmReturnFocus = null;
 }
 
 /* ===================== STATS ===================== */
 function showStats() {
   const d = getData();
-  renderStatsOverview(d);
   renderMasteryGrid(d);
   renderLevelPerf(d);
-  renderWeakFacts(d);
-  setMasteryFilter(masteryFilter, false);
   showScreen(APP_SCREEN.STATS);
-}
-
-function renderStatsOverview(d) {
-  let totalAttempts = 0;
-  let totalCorrect = 0;
-  let learnedFacts = 0;
-  let strongFacts = 0;
-  const totalFacts = (FACT_MAX - FACT_MIN + 1) ** 2;
-
-  for (let a = FACT_MIN; a <= FACT_MAX; a++) {
-    for (let b = FACT_MIN; b <= FACT_MAX; b++) {
-      const fs = d.factStats[makeFactKey(a, b)] || { attempts: 0, correct: 0 };
-      const attempts = coerceNumber(fs.attempts, 0);
-      const correct = coerceNumber(fs.correct, 0);
-      totalAttempts += attempts;
-      totalCorrect += correct;
-      if (correct > 0) learnedFacts++;
-      if (attempts > 0 && correct / attempts >= 0.85) strongFacts++;
-    }
-  }
-  const unlockedCount = Array.isArray(d.unlocked) ? d.unlocked.filter(Boolean).length : 1;
-  const overallAccuracy = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
-  const learnedRate = Math.round((learnedFacts / totalFacts) * 100);
-
-  el('stats-total-attempts').textContent = `${totalAttempts}`;
-  el('stats-total-correct').textContent = `${totalCorrect}`;
-  el('stats-accuracy').textContent = `${overallAccuracy}%`;
-  el('stats-quick-metric').textContent = `${learnedFacts}/${totalFacts}`;
-  el('stats-level-unlocked').textContent = `${unlockedCount}/${LEVEL_COUNT}`;
-  setText('stats-coins', formatCoins(d.coins));
-  el('stats-learned-pct').textContent = `${learnedRate}%`;
-  el('stats-strong-facts').textContent = `${strongFacts}`;
-}
-
-function setMasteryFilter(filter, updateGrid = true) {
-  masteryFilter = filter || 'all';
-  ['all', 'weak', 'untried'].forEach((value) => {
-    const btn = el(`mastery-filter-${value}`);
-    if (btn) btn.classList.toggle('active', value === masteryFilter);
-  });
-  if (updateGrid) {
-    renderMasteryGrid(getData());
-  }
-}
-
-function getFactStatus(fs) {
-  const attempts = coerceNumber(fs?.attempts, 0);
-  const correct = coerceNumber(fs?.correct, 0);
-  if (attempts <= 0) return 'untried';
-  const acc = correct / attempts;
-  if (acc < 0.6) return 'struggling';
-  if (acc < 0.85) return 'learning';
-  return 'mastered';
-}
-
-function shouldShowFactForFilter(status) {
-  if (masteryFilter === 'weak') return status === 'struggling' || status === 'untried';
-  if (masteryFilter === 'untried') return status === 'untried';
-  return true;
-}
-
-function getLevelFactProgress(d, levelIdx) {
-  const levelFacts = getLevelQuestionSet(levelIdx);
-  if (!Array.isArray(levelFacts) || levelFacts.length === 0) return { mastered: 0, total: 0 };
-  let mastered = 0;
-  levelFacts.forEach(([a, b]) => {
-    const fs = d.factStats[makeFactKey(a, b)] || { correct: 0 };
-    if (coerceNumber(fs.correct, 0) > 0) mastered++;
-  });
-  return { mastered, total: levelFacts.length };
-}
-
-function getLevelStatus(d, idx, progress) {
-  const unlocked = Array.isArray(d.unlocked) ? !!d.unlocked[idx] : idx === 0;
-  if (!unlocked) return '🔒 Locked';
-  if (progress.mastered >= progress.total && progress.total > 0) return '✅ Mastered';
-  return '🚀 In Progress';
-}
-
-function getNextTargetLevelIndex(d) {
-  if (!Array.isArray(d.unlocked)) return 0;
-  const firstLocked = d.unlocked.indexOf(false);
-  if (firstLocked !== -1) return firstLocked;
-  return LEVEL_COUNT - 1;
-}
-
-function renderWeakFacts(d) {
-  const list = el('weak-facts-list');
-  if (!list) return;
-  const nextLevelIdx = getNextTargetLevelIndex(d);
-  const levelFacts = getLevelQuestionSet(nextLevelIdx);
-  const focusKeys = new Set();
-  if (Array.isArray(levelFacts)) {
-    levelFacts.forEach(([a, b]) => {
-      focusKeys.add(makeFactKey(a, b));
-    });
-  }
-  const attempted = [];
-  const untried = [];
-  if (focusKeys.size === 0) {
-    replaceChildrenWithFragment(list, [createWeakFactRow('🎉', 'Great job! No focused facts yet.', 'good')]);
-    return;
-  }
-
-  focusKeys.forEach((key) => {
-    const [a, b] = key.split('x').map(Number);
-    const fs = d.factStats[key] || { attempts: 0, correct: 0 };
-    const attempts = coerceNumber(fs.attempts, 0);
-    const correct = coerceNumber(fs.correct, 0);
-    const item = { a, b, attempts, correct };
-    if (attempts === 0) {
-      untried.push(item);
-      return;
-    }
-    if (correct < attempts) {
-      item.acc = Math.round((correct / attempts) * 100);
-      attempted.push(item);
-    }
-  });
-
-  if (!attempted.length && !untried.length) {
-    const nextName = LEVELS[nextLevelIdx]?.friendly || `Level ${nextLevelIdx + 1}`;
-    replaceChildrenWithFragment(list, [createWeakFactRow('🎉', `${nextName} is clean — next facts are ready for full speed.`, 'good')]);
-    return;
-  }
-
-  attempted.sort((a, b) => {
-    if (a.acc !== b.acc) return a.acc - b.acc;
-    if (a.attempts !== b.attempts) return b.attempts - a.attempts;
-    return (a.a + a.b) - (b.a + b.b);
-  });
-
-  const top = attempted.slice(0, 5);
-  const remaining = Math.max(0, 5 - top.length);
-  if (untried.length && remaining > 0) top.push(...untried.slice(0, remaining));
-  if (!top.length) {
-    replaceChildrenWithFragment(list, [createWeakFactRow('🎉', 'Great job! Everything is clean for the next level.', 'good')]);
-    return;
-  }
-
-  const rows = [];
-  top.forEach(item => {
-    const attempts = item.attempts;
-    const correct = item.correct;
-    const acc = attempts ? Math.round((correct / attempts) * 100) : 0;
-    const statusClass = attempts === 0 ? 'warning' : (acc >= 85 ? 'good' : acc >= 60 ? '' : 'bad');
-    const label = attempts === 0 ? 'Not tried yet' : `${correct}/${attempts} right · ${acc}%`;
-    const row = createWeakFactRow(`${item.a} × ${item.b}`, label, statusClass);
-    rows.push(row);
-  });
-  replaceChildrenWithFragment(list, rows);
-}
-
-function createWeakFactRow(name, label, statusClass) {
-  const row = document.createElement('div');
-  row.className = 'weak-fact-row';
-  const labelText = label || '';
-  const status = statusClass || '';
-  row.innerHTML = `<span class="name">${name}</span><span class="meta ${status}">${labelText}</span>`;
-  return row;
-}
-
-function showConfirmDialog(options) {
-  const {
-    title,
-    text,
-    acceptText,
-    cancelText,
-    onAccept,
-    onCancel = hideConfirmOverlay,
-  } = options;
-
-  const overlay = el('confirm-overlay');
-  const accept = el('confirm-accept-btn');
-  const cancel = el('confirm-cancel-btn');
-  el('confirm-title').textContent = title;
-  el('confirm-text').textContent = text;
-  accept.textContent = acceptText;
-  cancel.textContent = cancelText;
-  accept.onclick = onAccept;
-  cancel.onclick = onCancel;
-  const active = document.activeElement;
-  if (active instanceof HTMLElement) confirmReturnFocus = active;
-  overlay.style.display = 'flex';
-  overlay.setAttribute('aria-hidden', 'false');
-  overlay.setAttribute('tabindex', '-1');
-  requestAnimationFrame(() => {
-    if (accept) accept.focus();
-  });
 }
 
 function renderMasteryGrid(d) {
   const grid = el('mastery-grid');
-  const nodes = [];
-  const emptyState = el('mastery-empty-state');
-  if (emptyState) emptyState.style.display = 'none';
-  let hasMatch = false;
+  grid.innerHTML = '';
   // Top-left corner
   const corner = document.createElement('div');
   corner.className='mg-cell header'; corner.textContent='×';
-  nodes.push(corner);
+  grid.appendChild(corner);
   // Column headers
   for(let c=FACT_MIN;c<=FACT_MAX;c++) {
     const h = document.createElement('div');
     h.className='mg-cell header'; h.textContent=c;
-    nodes.push(h);
+    grid.appendChild(h);
   }
   // Rows
   for(let a=FACT_MIN;a<=FACT_MAX;a++) {
     const rh = document.createElement('div');
     rh.className='mg-cell header'; rh.textContent=a;
-    nodes.push(rh);
+    grid.appendChild(rh);
     for(let b=FACT_MIN;b<=FACT_MAX;b++) {
       const key = `${a}x${b}`;
       const fs = d.factStats[key] || {attempts:0,correct:0};
-      const status = getFactStatus(fs);
       const cell = document.createElement('div');
       cell.className = 'mg-cell';
-      if(status === 'untried') cell.classList.add('untried');
-      if(status === 'struggling') cell.classList.add('struggling');
-      if(status === 'learning') cell.classList.add('learning');
-      if(status === 'mastered') cell.classList.add('mastered');
-      if (!shouldShowFactForFilter(status)) {
-        cell.classList.add('muted-cell');
-      } else {
-        hasMatch = true;
-      }
+      const acc = fs.attempts>0 ? fs.correct/fs.attempts : -1;
+      if(acc < 0) cell.classList.add('untried');
+      else if(acc < 0.7) cell.classList.add('struggling');
+      else if(acc < 0.9) cell.classList.add('learning');
+      else cell.classList.add('mastered');
       cell.textContent = fs.attempts > 0 ? `${a*b}` : '';
       cell.title = `${a}×${b}=${a*b} | ${fs.correct}/${fs.attempts} correct`;
-      nodes.push(cell);
+      grid.appendChild(cell);
     }
   }
-  replaceChildrenWithFragment(grid, nodes);
-  if (!hasMatch && emptyState) emptyState.style.display = 'block';
 }
 
 function renderLevelPerf(d) {
   const list = el('level-perf-list');
-  const rows = [];
+  list.innerHTML = '';
   LEVELS.forEach((lvl,i) => {
-    const progress = getLevelFactProgress(d, i);
     const ls = d.levelStats[i];
     const acc = ls.attempts>0 ? Math.round(ls.correct/ls.attempts*100) : 0;
-  const avgSpd = ls.correct>0 ? (ls.totalTime/ls.correct/1000).toFixed(1)+'s' : '—';
-    const status = getLevelStatus(d, i, progress);
-    const statusClass = status.includes('Mastered') ? 'done' : status.includes('Locked') ? 'locked' : 'active';
-    const levelPct = getPercentValue(progress.mastered, progress.total);
+    const avgSpd = ls.correct>0 ? (ls.totalTime/ls.correct/1000).toFixed(1)+'s' : '—';
     const div = document.createElement('div');
     div.className = 'level-perf-row';
     div.innerHTML = `
       <div class="lpr-lvl" style="color:${lvl.color}">Lv${i+1}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:.75rem;color:var(--text2);margin-bottom:4px">${lvl.name}</div>
-        <div class="lpr-bar-wrap"><div class="lpr-bar" style="width:${levelPct}%;background:linear-gradient(90deg,${lvl.color},${lvl.color}88)"></div></div>
+        <div class="lpr-bar-wrap"><div class="lpr-bar" style="width:${acc}%;background:linear-gradient(90deg,${lvl.color},${lvl.color}88)"></div></div>
       </div>
-      <div class="lpr-tag ${statusClass}">${status}</div>
       <div class="lpr-pct">${acc>0?acc+'%':'—'}</div>
       <div class="lpr-spd">⏱${avgSpd}</div>
     `;
-    rows.push(div);
+    list.appendChild(div);
   });
-  replaceChildrenWithFragment(list, rows);
 }
 
 /* ===================== MILESTONE ===================== */
@@ -1228,10 +763,9 @@ function animateMascot(type) {
 
 function miniBurst() {
   const card = el('question-card');
-  if (!card) return;
   const rect = card.getBoundingClientRect();
   const colors = ['#f59e0b','#ec4899','#10b981','#3b82f6'];
-  for (let i = 0; i < EFFECTS_CONFIG.miniBurstPieces; i++) {
+  for (let i = 0; i < 8; i++) {
     const p = document.createElement('div');
     p.style.cssText = `
       position:fixed;
@@ -1252,7 +786,7 @@ function miniBurst() {
 /* ===================== CONFETTI ===================== */
 function launchConfetti() {
   const colors = ['#f59e0b','#ec4899','#10b981','#3b82f6','#8b5cf6','#f97316'];
-  for(let i=0;i<EFFECTS_CONFIG.confettiPieces;i++) {
+  for(let i=0;i<60;i++) {
     setTimeout(()=>{
       const p = document.createElement('div');
       p.className = 'confetti-piece';
@@ -1276,66 +810,22 @@ function launchConfetti() {
 function showScreen(name) {
   const target = el('screen-'+name);
   if (!target) return;
-  const current = activeScreenNode || getCachedScreens().find((screen) => screen.classList.contains('active'));
-  if (current && current !== target) {
-    current.classList.remove('screen-in');
-  }
   gameState.screen = name;
-  getCachedScreens().forEach(s=>s.classList.remove('active'));
-  target.classList.remove('screen-in');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   target.classList.add('active');
-  activeScreenNode = target;
-  requestAnimationFrame(() => {
-    target.classList.add('screen-in');
-  });
-}
-
-function handleConfirmOverlayKeydown(e) {
-  const overlay = el('confirm-overlay');
-  if (!overlay || overlay.style.display !== 'flex') return;
-
-  const accept = el('confirm-accept-btn');
-  const cancel = el('confirm-cancel-btn');
-  if (!accept || !cancel) return;
-
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    hideConfirmOverlay();
-    return;
-  }
-
-  if (e.key !== 'Tab') return;
-  const focusables = [accept, cancel];
-  const idx = focusables.indexOf(document.activeElement);
-  if (idx === -1) {
-    e.preventDefault();
-    accept.focus();
-    return;
-  }
-  if (e.shiftKey && idx === 0) {
-    e.preventDefault();
-    cancel.focus();
-    return;
-  }
-  if (!e.shiftKey && idx === focusables.length - 1) {
-    e.preventDefault();
-    accept.focus();
-  }
 }
 
 /* ===================== KEYBOARD ===================== */
-const answerInput = el('answer-input');
-if (answerInput) {
-  answerInput.addEventListener('keydown', e => {
-    if (e.key !== 'Enter') return;
-    if (!isTypeAnswerMode()) return;
-    e.preventDefault();
-    const input = getAnswerInput();
-    if (!input) return;
-    // Keep only digits and keep the current behavior for both 1-digit and 2-digit answers.
-    input.value = getSanitizedNumericAnswer();
-    submitAnswer();
-  });
+el('answer-input').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (answerMode !== 'type') return;
+  e.preventDefault();
+  const input = getAnswerInput();
+  if (!input) return;
+  // Keep only digits and keep the current behavior for both 1-digit and 2-digit answers.
+  input.value = getSanitizedNumericAnswer();
+  submitAnswer();
+});
 
 // Keep number format handling centralized for all input methods.
 function getAnswerLengthFromInput() {
@@ -1368,14 +858,14 @@ function hasExactAnswerLength(value) {
 function shouldAutoSubmitByFastMode(rawValue) {
   // Auto-submit only in game, only type mode, and only once per question.
   if (!isActiveGameplayInput() || !fastMode || gameState.fastModeUsed) return false;
-  if (!isTypeAnswerMode()) return false;
+  if (answerMode !== 'type') return false;
   return hasExactAnswerLength(rawValue);
 }
 
-  answerInput.addEventListener('input', function() {
-    const input = this;
-    // Rebuild the field using only digits so pasted text never breaks answer checks.
-    const sanitized = sanitizeNumericInput(input.value);
+el('answer-input').addEventListener('input', function() {
+  const input = this;
+  // Rebuild the field using only digits so pasted text never breaks answer checks.
+  const sanitized = sanitizeNumericInput(input.value);
 
   input.value = sanitized;
   const expectedLen = getAnswerLengthFromInput();
@@ -1385,114 +875,50 @@ function shouldAutoSubmitByFastMode(rawValue) {
 
   gameState.fastModeUsed = true;
   submitAnswer();
-  });
-  answerInput.addEventListener('blur', function() {
-    // Always normalize on blur so pasted/IME artifacts can't remain.
-    const sanitized = sanitizeNumericInput(this.value);
-    this.value = sanitized;
-  });
-}
-
-function handleChoiceClick(event) {
-  const target = event.currentTarget;
-  if (!(target instanceof HTMLElement)) return;
-  submitChoice(target);
-}
-
-function getMissingCoreNodes() {
-  return REQUIRED_APP_IDS.filter((id) => !el(id));
-}
-
-function renderLoadError(message) {
-  const app = el('app');
-  if (!app) return;
-  app.innerHTML = `
-    <div class="card" style="margin:40px auto;max-width:700px">
-      <div class="results-title">⚠️ App Failed to Load</div>
-      <p class="muted-note">Missing required page nodes: ${message}</p>
-    </div>
-  `;
-}
+});
+el('answer-input').addEventListener('blur', function() {
+  // Always normalize on blur so pasted/IME artifacts can’t remain.
+  const sanitized = sanitizeNumericInput(this.value);
+  this.value = sanitized;
+});
 
 /* ===================== INIT ===================== */
-function initUIHandlers() {
-  [
-    ['home-stats-btn', showStats],
-    ['mode-toggle', toggleMode],
-    ['theme-btn', toggleTheme],
-    ['home-reset-btn', showResetConfirm],
-    ['game-quit-btn', confirmQuit],
-    ['submit-btn', submitAnswer],
-    ['fast-mode-btn', toggleFastMode],
-    ['results-home-btn', goHome],
-    ['retry-level-btn', retryLevel],
-    ['btn-next-level', nextLevel],
-    ['mastery-filter-all', () => setMasteryFilter('all')],
-    ['mastery-filter-weak', () => setMasteryFilter('weak')],
-    ['mastery-filter-untried', () => setMasteryFilter('untried')],
-    ['stats-back-btn', goHome],
-  ].forEach(([id, handler]) => {
-    const btn = el(id);
-    if (!btn) return;
-    btn.addEventListener('click', handler);
-  });
-
-  const levelGrid = el('level-grid');
-  if (levelGrid) {
-    levelGrid.addEventListener('click', handleLevelGridClick);
-  }
-
-  getChoiceButtons().forEach((btn) => {
-    btn.addEventListener('click', handleChoiceClick);
-  });
-}
-
-function handleLevelGridClick(event) {
-  const button = event.target instanceof Element ? event.target.closest('.level-btn') : null;
-  if (!button) return;
-  if (button.disabled) return;
-
-  const rawIndex = button.dataset.levelIndex;
-  const idx = Number(rawIndex);
-  if (!Number.isInteger(idx)) return;
-
-  startLevel(idx);
-}
-
 answerMode = (() => {
   const savedMode = getStorageValue(STORAGE_KEYS.mode);
-  return savedMode === ANSWER_MODES.CHOICE || savedMode === ANSWER_MODES.TYPE
-    ? savedMode
-    : ANSWER_MODES.TYPE;
+  return savedMode === 'choice' || savedMode === 'type' ? savedMode : 'type';
 })();
 syncFastModeFromStorage();
+let reduceMotion = getStorageBool(STORAGE_KEYS.motion);
+if (reduceMotion) {
+  document.body.classList.add('motion-off');
+}
 if (getStorageValue(STORAGE_KEYS.theme) === 'light') {
   document.body.classList.add('light');
 }
 function updateModeText() {
   const btn = el('mode-toggle');
-  if (btn) btn.textContent = getModeButtonLabel();
+  if (btn) btn.textContent = answerMode === 'type' ? '⌨️ Type' : '🔘 Pick';
 }
 function updateFastModeButton() {
   const btn = el('fast-mode-btn');
   if (btn) btn.textContent = fastMode ? '⚡ Fast Mode' : '🐢 Slow Mode';
 }
-const confirmOverlay = el('confirm-overlay');
-if (confirmOverlay) {
-  confirmOverlay.addEventListener('keydown', handleConfirmOverlayKeydown);
-  confirmOverlay.addEventListener('click', function(event) {
-    if (event.target === confirmOverlay) hideConfirmOverlay();
-  });
-}
-window.addEventListener('pagehide', flushQueuedSave);
 
-const missingNodes = getMissingCoreNodes();
-if (missingNodes.length > 0) {
-  renderLoadError(missingNodes.join(', '));
-} else {
-  renderHome();
-  initUIHandlers();
-  showScreen(APP_SCREEN.HOME);
-  updateModeText();
-  updateFastModeButton();
+function updateMotionButton() {
+  const motionBtn = el('motion-btn');
+  if (motionBtn) motionBtn.textContent = reduceMotion ? '🎬 Motion OFF' : '🎬 Motion ON';
 }
+function toggleMotion() {
+  reduceMotion = !reduceMotion;
+  document.body.classList.toggle('motion-off', reduceMotion);
+  updateMotionButton();
+  setStorageValue(STORAGE_KEYS.motion, reduceMotion ? '1' : '0');
+}
+renderHome();
+updateModeText();
+updateFastModeButton();
+updateMotionButton();
+
+
+
+
