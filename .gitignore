@@ -45,3 +45,7 @@ tmp/
 temp/
 *.tmp
 *.temp
+
+# Project-specific
+.claude/
+docs/plans/
