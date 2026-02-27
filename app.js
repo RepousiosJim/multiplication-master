@@ -1,12 +1,12 @@
 ﻿/* ===================== DATA ===================== */
 const LEVELS = [
   // Progression: easy -> medium -> hard (hardest tables prioritize 6, 7, 8).
-  { name:'�1 & �2',  friendly:'Easy Start',         color:'#f59e0b', tables:[1,2] },
-  { name:'�3 & �4',  friendly:'Getting Warmer',     color:'#10b981', tables:[3,4] },
-  { name:'�5 & �10', friendly:'Level Up!',          color:'#3b82f6', tables:[5,10] },
+  { name:'×1 & ×2',  friendly:'Easy Start',         color:'#f59e0b', tables:[1,2] },
+  { name:'×3 & ×4',  friendly:'Getting Warmer',     color:'#10b981', tables:[3,4] },
+  { name:'×5 & ×10', friendly:'Level Up!',          color:'#3b82f6', tables:[5,10] },
   { name:'Mixed Easy',friendly:'Mix It Up',         color:'#8b5cf6', tables:[1,2,3,4,5,10] },
-  { name:'�6 & �7',  friendly:'Bracing for Impact', color:'#ec4899', tables:[6,7] },
-  { name:'�8 & �9',  friendly:'Hard Mode 2',        color:'#f97316', tables:[8,9] },
+  { name:'×6 & ×7',  friendly:'Bracing for Impact', color:'#ec4899', tables:[6,7] },
+  { name:'×8 & ×9',  friendly:'Hard Mode 2',        color:'#f97316', tables:[8,9] },
   { name:'Mixed Hard',friendly:'Hard Mode',         color:'#06b6d4', tables:[6,7,8] },
   { name:'Full Blast!',friendly:'FULL BLAST',       color:'#ef4444', tables:[1,2,3,4,5,6,7,8,9,10] },
 ];
@@ -24,7 +24,6 @@ const STORAGE_KEYS = {
   data: 'mm_data',
   mode: 'mm_mode',
   fastMode: 'mm_fast_mode',
-  motion: 'mm_motion',
   theme: 'mm_theme',
 };
 const inMemoryStorage = new Map();
@@ -211,17 +210,13 @@ function resetAll() {
   removeStorageValue(STORAGE_KEYS.data);
   removeStorageValue(STORAGE_KEYS.mode);
   removeStorageValue(STORAGE_KEYS.fastMode);
-  removeStorageValue(STORAGE_KEYS.motion);
   removeStorageValue(STORAGE_KEYS.theme);
   answerMode = 'type';
   fastMode = false;
-  reduceMotion = false;
   document.body.classList.remove('light');
-  document.body.classList.remove('motion-off');
   renderHome();
   updateModeText();
   updateFastModeButton();
-  updateMotionButton();
 }
 
 function toggleMode() {
@@ -255,10 +250,32 @@ function expectedAnswerLength() {
   return getCurrentAnswerLength();
 }
 
+function initAppControls() {
+  const binds = [
+    ['home-stats-btn', showStats],
+    ['mode-toggle', toggleMode],
+    ['theme-btn', toggleTheme],
+    ['home-reset-btn', showResetConfirm],
+    ['game-quit-btn', confirmQuit],
+    ['submit-btn', submitAnswer],
+    ['fast-mode-btn', toggleFastMode],
+    ['results-home-btn', goHome],
+    ['retry-level-btn', retryLevel],
+    ['btn-next-level', nextLevel],
+    ['stats-back-btn', goHome],
+  ];
+
+  binds.forEach(([id, handler]) => {
+    const node = el(id);
+    if (node) node.onclick = handler;
+  });
+}
+
 /* ===================== RENDER HOME ===================== */
 function renderHome() {
   const d = getData();
   const grid = el('level-grid');
+  if (!grid) return;
   grid.innerHTML = '';
   LEVELS.forEach((lvl,i) => {
     const unlocked = d.unlocked[i];
@@ -888,10 +905,6 @@ answerMode = (() => {
   return savedMode === 'choice' || savedMode === 'type' ? savedMode : 'type';
 })();
 syncFastModeFromStorage();
-let reduceMotion = getStorageBool(STORAGE_KEYS.motion);
-if (reduceMotion) {
-  document.body.classList.add('motion-off');
-}
 if (getStorageValue(STORAGE_KEYS.theme) === 'light') {
   document.body.classList.add('light');
 }
@@ -903,21 +916,10 @@ function updateFastModeButton() {
   const btn = el('fast-mode-btn');
   if (btn) btn.textContent = fastMode ? '⚡ Fast Mode' : '🐢 Slow Mode';
 }
-
-function updateMotionButton() {
-  const motionBtn = el('motion-btn');
-  if (motionBtn) motionBtn.textContent = reduceMotion ? '🎬 Motion OFF' : '🎬 Motion ON';
-}
-function toggleMotion() {
-  reduceMotion = !reduceMotion;
-  document.body.classList.toggle('motion-off', reduceMotion);
-  updateMotionButton();
-  setStorageValue(STORAGE_KEYS.motion, reduceMotion ? '1' : '0');
-}
 renderHome();
 updateModeText();
 updateFastModeButton();
-updateMotionButton();
+initAppControls();
 
 
 
