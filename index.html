@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Multiplication Master ✨</title>
+<title>Multiplication Master</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -44,6 +44,18 @@
     overflow-x: hidden;
     position: relative;
   }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -20%;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(900px 260px at 12% 8%, #ffffff14, transparent 55%),
+      radial-gradient(760px 240px at 88% 12%, #ec489922, transparent 52%),
+      radial-gradient(700px 220px at 50% 110%, #3b82f655, transparent 45%);
+    opacity: .55;
+  }
 
   /* Starfield */
   .stars {
@@ -69,12 +81,31 @@
     min-height: 100vh;
     display: flex; flex-direction: column; align-items: center;
     padding: 20px;
+    gap: 16px;
   }
 
   /* Screens */
-  .screen { display: none; width: 100%; max-width: 700px; animation: fadeIn .3s ease; }
-  .screen.active { display: flex; flex-direction: column; align-items: center; }
-  @keyframes fadeIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+  .screen { display: none; width: 100%; max-width: 700px; }
+  .screen.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  .screen.active.screen-in {
+    animation: routeFade 260ms cubic-bezier(.34,1.56,.64,1);
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @keyframes routeFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
   /* HEADER */
   .logo {
@@ -84,8 +115,13 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     text-align: center; margin-bottom: 4px;
     filter: drop-shadow(0 0 20px #f59e0b55);
+    animation: heroFloat 3.2s ease-in-out infinite;
   }
   .tagline { color: var(--text2); font-size: .95rem; margin-bottom: 28px; text-align: center; }
+  @keyframes heroFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
 
   /* Cards */
   .card {
@@ -95,6 +131,19 @@
     padding: 28px;
     width: 100%;
     box-shadow: 0 8px 32px #00000044;
+    backdrop-filter: blur(6px);
+    position: relative;
+    overflow: hidden;
+  }
+  .card > * { position: relative; z-index: 1; }
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--r);
+    background: linear-gradient(125deg, #ffffff18 0%, transparent 45%, #ffffff10 100%);
+    pointer-events: none;
+    z-index: 0;
   }
 
   /* Buttons */
@@ -108,6 +157,25 @@
   }
   .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
   .btn:active { transform: translateY(0); }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .btn:focus-visible,
+  .level-btn:focus-visible,
+  .choice-btn:focus-visible,
+  .mastery-filter-btn:focus-visible {
+    outline: 2px solid #fff9;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px #f59e0b55;
+  }
   .btn-primary {
     background: linear-gradient(135deg, var(--accent1), var(--accent2));
     color: #1a1545;
@@ -129,34 +197,140 @@
     box-shadow: 0 4px 16px #3b82f644;
   }
   #submit-btn { min-width: 56px; min-height: 56px; font-size: 1.4rem; padding: 12px 20px; }
+  #submit-btn:focus-visible {
+    outline: 2px solid #0f172a;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px #ffffff99;
+  }
 
   /* LEVEL SELECT */
   .levels-title {
     font-family: 'Fredoka One', cursive;
-    font-size: 1.5rem; color: var(--accent1);
-    margin-bottom: 16px; text-align: center;
+    font-size: 1.75rem; color: var(--accent1);
+    margin-bottom: 14px; text-align: center;
+    letter-spacing: .4px;
   }
   .level-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px;
     width: 100%; margin-bottom: 20px;
   }
   .level-btn {
-    aspect-ratio: 1;
-    border-radius: 16px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 20px;
+    min-height: 156px;
+    display: flex; flex-direction: column;
+    justify-content: flex-start; align-items: stretch;
     cursor: pointer; transition: transform .2s, box-shadow .2s;
-    border: 2px solid transparent;
+    border: 1px solid transparent;
     font-family: 'Fredoka One', cursive;
     position: relative;
     overflow: hidden;
+    gap: 5px;
+    padding: 12px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 8px 28px #00000055;
+    border-top-width: 2px;
   }
-  .level-btn:not(.locked):hover { transform: scale(1.06); }
-  .level-btn .lvl-num { font-size: 2rem; line-height: 1; }
-  .level-btn .lvl-name { font-size: .6rem; text-align: center; margin-top: 4px; font-family: 'Nunito', sans-serif; font-weight: 700; opacity: .85; }
-  .level-btn .lvl-stars { font-size: .75rem; margin-top: 2px; }
-  .level-btn .lvl-sub { font-size: .5rem; opacity: .5; font-family: 'Nunito', sans-serif; }
-  .level-btn.locked { background: var(--locked); color: #4b5563; cursor: not-allowed; }
-  .level-btn.locked::after { content: '🔒'; font-size: 1.2rem; }
+  .level-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(140deg, #ffffff14, transparent 58%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .level-btn:not(.locked):hover { transform: translateY(-4px); }
+  .level-btn:hover .lvl-num { transform: translateX(2px); }
+  .level-btn .lvl-num { transition: transform .2s ease; }
+  .level-btn .lvl-badge {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .level-btn .lvl-num { font-size: 1.4rem; line-height: 1; }
+  .level-btn .lvl-mini {
+    font-size: .57rem;
+    font-family: 'Nunito', sans-serif;
+    opacity: .78;
+    border: 1px solid #ffffff2f;
+    border-radius: 999px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+  .level-btn .lvl-name { font-size: .88rem; margin-top: 4px; line-height: 1.1; position: relative; z-index: 1; font-family: 'Nunito', sans-serif; font-weight: 800; }
+  .level-btn .lvl-stars { font-size: .75rem; position: relative; z-index: 1; }
+  .level-btn .lvl-sub { font-size: .58rem; opacity: .58; font-family: 'Nunito', sans-serif; line-height: 1.2; position: relative; z-index: 1; }
+  .level-btn .lvl-hint {
+    margin-top: auto;
+    font-size: .56rem;
+    opacity: .72;
+    font-family: 'Nunito', sans-serif;
+    position: relative;
+    z-index: 1;
+    line-height: 1.15;
+  }
+  .lvl-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 1px;
+    position: relative;
+    z-index: 1;
+  }
+  .lvl-progress-track {
+    flex: 1;
+    height: 8px;
+    background: #ffffff14;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #ffffff1f;
+  }
+  .lvl-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent1), var(--accent3));
+    border-radius: 10px;
+    transition: width .45s ease;
+    min-width: 4px;
+  }
+  .lvl-progress-meta {
+    font-family: 'Nunito', sans-serif;
+    font-size: .54rem;
+    width: 32px;
+    text-align: right;
+    color: var(--text2);
+    letter-spacing: .3px;
+  }
+  .level-btn.locked {
+    background: var(--locked);
+    color: #4b5563;
+    cursor: not-allowed;
+    opacity: .58;
+    filter: grayscale(1);
+  }
+  .level-btn.locked::after {
+    content: '🔒';
+    position: absolute;
+    font-size: 1.2rem;
+    right: 12px;
+    top: 12px;
+    opacity: .7;
+  }
+  .level-btn.next-target {
+    border-color: var(--correct) !important;
+    box-shadow: 0 0 0 2px #10b98155, 0 8px 30px #10b98133;
+  }
+  .level-btn.next-target::before {
+    animation: softPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes softPulse {
+    0%, 100% { opacity: .24; }
+    50% { opacity: .5; }
+  }
   .level-btn.unlocked { box-shadow: 0 4px 16px #00000033; }
   .level-colors { --c0: #f59e0b; --c1: #10b981; --c2: #3b82f6; --c3: #ec4899; --c4: #8b5cf6; --c5: #f97316; --c6: #06b6d4; --c7: #ef4444; }
 
@@ -166,12 +340,30 @@
 
   /* GAME SCREEN */
   .game-header {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
     width: 100%; margin-bottom: 16px;
+  }
+  .game-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  #question-count {
+    background: var(--card2);
+    border-radius: 50px;
+    padding: 4px 12px;
+    min-width: 92px;
+    text-align: center;
+    color: var(--accent1);
+    font-family: 'Fredoka One', cursive;
+    font-size: .82rem;
   }
   .progress-wrap { flex: 1; background: var(--card2); border-radius: 50px; height: 10px; overflow: hidden; }
   .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent1), var(--accent2)); border-radius: 50px; transition: width .4s ease; }
-  .progress-text { font-size: .85rem; color: var(--text2); margin-left: 10px; white-space: nowrap; }
+  .progress-text { font-size: .85rem; color: var(--text2); margin-left: 10px; white-space: normal; word-break: break-word; }
   .streak-badge {
     background: var(--card2); border-radius: 50px; padding: 4px 12px;
     font-family: 'Fredoka One', cursive; font-size: .9rem; color: var(--accent1);
@@ -229,10 +421,18 @@
     font-size: 2rem;
     padding: 12px 20px;
     text-align: center;
+    font-weight: 700;
     outline: none;
     transition: border-color .2s;
   }
   .answer-input:focus { border-color: var(--accent1); }
+  .answer-input:focus-visible {
+    box-shadow: 0 0 0 4px #10b98133;
+  }
+  .answer-input::placeholder {
+    color: #94a3b8;
+    opacity: .9;
+  }
   .answer-input::-webkit-inner-spin-button,
   .answer-input::-webkit-outer-spin-button { -webkit-appearance: none; }
   .answer-input[type=number] { -moz-appearance: textfield; }
@@ -280,6 +480,11 @@
   .choice-btn:hover { transform: scale(1.04); background: var(--card); }
   .choice-btn.correct-choice { background: #10b98133; border-color: #10b981; }
   .choice-btn.wrong-choice  { background: #ef444433; border-color: #ef4444; }
+  .choice-btn:focus-visible {
+    outline: 2px solid #fff9;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px #f59e0b55;
+  }
 
   /* RESULTS */
   .results-stars { font-size: 3rem; text-align: center; margin: 8px 0; letter-spacing: 4px; }
@@ -316,6 +521,96 @@
     font-family: 'Fredoka One', cursive; font-size: 1.2rem; color: var(--accent1);
     margin: 20px 0 10px; width: 100%;
   }
+  .stats-summary-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .summary-card {
+    background: var(--bg);
+    border-radius: 14px;
+    padding: 10px 12px;
+    min-height: 74px;
+    border: 1px solid #ffffff14;
+  }
+  .summary-card .val {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.35rem;
+    color: var(--text);
+  }
+  .summary-card .lbl {
+    margin-top: 4px;
+    font-size: .72rem;
+    color: var(--text2);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+  .mastery-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .mastery-filter-btn {
+    border-radius: 50px;
+    background: var(--card2);
+    color: var(--text2);
+    border: 1px solid #ffffff20;
+    padding: 8px 12px;
+    font-size: .82rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+  .mastery-filter-btn.active {
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    color: #1a1545;
+    border-color: transparent;
+  }
+  .weak-facts-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .weak-fact-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: .9rem;
+  }
+  .weak-fact-row .name {
+    font-family: 'Fredoka One', cursive;
+    flex-shrink: 0;
+    margin-right: 10px;
+  }
+  .weak-fact-row .meta {
+    color: var(--text2);
+    font-size: .78rem;
+  }
+  .weak-fact-row .meta.good { color: var(--correct); }
+  .weak-fact-row .meta.warning { color: #f59e0b; }
+  .weak-fact-row .meta.bad { color: var(--wrong); font-weight: 700; }
+  .lpr-tag {
+    width: 84px;
+    font-size: .72rem;
+    text-align: right;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    font-weight: 700;
+  }
+  .lpr-tag.locked { color: var(--wrong); }
+  .lpr-tag.active { color: #93c5fd; }
+  .lpr-tag.done { color: var(--correct); }
 
   .mastery-grid-wrap { width: 100%; overflow-x: auto; margin-bottom: 8px; }
   .mastery-grid {
@@ -336,6 +631,7 @@
   .mg-cell.struggling { background: #f59e0b33; border: 1px solid #f59e0b44; color: var(--accent1); }
   .mg-cell.learning { background: #3b82f633; border: 1px solid #3b82f644; color: #93c5fd; }
   .mg-cell.mastered { background: #10b98133; border: 1px solid #10b98155; color: #6ee7b7; }
+  .mg-cell.muted-cell { opacity: .2; }
 
   .level-perf-list { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
   .level-perf-row {
@@ -421,13 +717,14 @@
   to   { transform: scale(1);  opacity: 1; }
 }
 
-.wrong-overlay {
+  .wrong-overlay {
   position: fixed; inset: 0; z-index: 400;
   display: flex; align-items: center; justify-content: center;
   background: #00000077;
-  pointer-events: none;
+  pointer-events: auto;
 }
 .wrong-overlay-content {
+  pointer-events: auto;
   background: var(--card);
   border: 2px solid #ef444455;
   border-radius: 24px;
@@ -479,16 +776,26 @@
 }
 
   /* Responsive */
+  @media(max-width:1100px) {
+    .level-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .level-btn { min-height: 132px; }
+    .level-btn .lvl-num { font-size: 1.3rem; }
+    .level-btn .lvl-name { font-size: .78rem; }
+  }
   @media(max-width:480px) {
     .level-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .level-btn .lvl-num { font-size: 1.5rem; }
-    .level-btn { min-height: 128px; }
+    .level-btn { min-height: 128px; padding: 8px; }
     .level-btn .lvl-hint { display: none; }
+    .level-btn .lvl-mini { font-size: .5rem; padding: 1px 6px; }
+    .lvl-progress-meta { width: 28px; }
+    .lvl-progress-wrap { margin-top: 2px; }
     .stats-grid { grid-template-columns: repeat(3,1fr); gap: 8px; }
     .question-text { font-size: clamp(3rem,16vw,4.5rem); }
     .answer-input { font-size: 1.6rem; padding: 10px 14px; }
-    .game-top { width: 100%; flex-direction: column; align-items: stretch; }
+  .game-top { width: 100%; flex-direction: column; align-items: stretch; }
   }
+  .stats-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .ui-toolbar {
     display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
@@ -527,16 +834,19 @@
   .levels-title strong { font-size: 1.75rem; }
   .level-btn {
     min-height: 138px;
-    aspect-ratio: 1.14;
     padding: 8px;
+    gap: 4px;
   }
   .level-btn .lvl-num { font-size: 1.85rem; }
+  .level-btn .lvl-mini { font-size: .56rem; }
+  .level-btn .lvl-name { font-size: .82rem; }
+  .level-btn .lvl-sub { font-size: .56rem; }
   .level-btn .lvl-hint {
     font-size: .58rem;
     opacity: .8;
     line-height: 1.2;
-    margin-top: 3px;
     color: var(--text2);
+    margin-top: 2px;
   }
   .level-btn.locked { min-height: 96px; }
   .level-btn.locked::after { font-size: 1.2rem; }
@@ -552,15 +862,12 @@
   .game-top {
     display: flex; align-items: center; justify-content: space-between; width: 100%;
   }
+  .progress-text {
+    margin-left: 0;
+    width: 100%;
+  }
   #question-count {
-    background: var(--card2);
-    border-radius: 50px;
-    padding: 4px 12px;
-    min-width: 92px;
-    text-align: center;
-    color: var(--accent1);
-    font-family: 'Fredoka One', cursive;
-    font-size: .82rem;
+    min-width: 78px;
   }
 
   .question-card {
@@ -582,19 +889,8 @@
     padding: 14px 10px;
   }
 
-  .motion-off .mascot,
-  .motion-off .mascot-happy,
-  .motion-off .mascot-sad,
-  .motion-off .mascot-dance,
-  .motion-off .milestone-content,
-  .motion-off .confetti-piece,
-  .motion-off .wrong-overlay-content,
-  .motion-off *::before,
-  .motion-off *::after {
-    animation: none !important;
-    transition: none !important;
-  }
   @media (prefers-reduced-motion: reduce) {
+    .screen.active.screen-in { animation: none !important; opacity: 1 !important; transform: none !important; }
     .mascot { animation: none !important; }
     .milestone-overlay,
     .milestone-content,
@@ -611,52 +907,53 @@
 
   <!-- HOME SCREEN -->
   <div class="screen active" id="screen-home">
-    <div class="logo">✖ Multiplication<br>Master</div>
+    <div class="logo">🌟 Multiplication Master</div>
     <div class="tagline">Learn your times tables — one level at a time! 🚀</div>
     <div class="card" style="margin-bottom:16px">
       <div class="levels-title">Choose Your Level</div>
       <div class="level-grid level-colors" id="level-grid"></div>
       <div class="ui-toolbar">
-        <button class="btn btn-secondary" onclick="showStats()">📊 My Stats</button>
-        <button class="btn btn-secondary" id="mode-toggle" onclick="toggleMode()">⌨️ Type</button>
-        <button class="btn btn-secondary" id="theme-btn" onclick="toggleTheme()">☀️ Bright</button>
-        <button class="btn btn-secondary" id="motion-btn" onclick="toggleMotion()">Motion</button>
-        <button class="btn btn-secondary" onclick="showResetConfirm()">🗑 Reset</button>
+        <button class="btn btn-secondary" id="home-stats-btn">📊 My Stats</button>
+        <button class="btn btn-secondary" id="mode-toggle">⌨️ Type</button>
+        <button class="btn btn-secondary" id="theme-btn">☀️ Bright</button>
+        <button class="btn btn-secondary" id="home-reset-btn">🗑 Reset</button>
       </div>
     </div>
   <div class="ui-chip" style="margin:8px 0 4px">
     <span id="home-coins" style="font-family:'Fredoka One',cursive;color:var(--accent1);font-size:1.1rem"></span>
   </div>
-    <p class="muted-note">Answer 15 questions, get 10+ correct to unlock the next level.</p>
+    <p class="muted-note">Learn every multiplication fact in each level to unlock the next one.</p>
   </div>
 
   <!-- GAME SCREEN -->
   <div class="screen" id="screen-game">
     <div class="game-header">
       <div class="game-top">
-        <button class="btn btn-secondary" onclick="confirmQuit()">← Quit</button>
-        <span id="question-count" class="ui-chip good">Q 1/15</span>
+        <button class="btn btn-secondary" id="game-quit-btn">← Quit</button>
+        <button class="btn btn-secondary" id="fast-mode-btn">🐢 Slow Mode</button>
+        <span id="question-count" class="ui-chip good">Fact 1/0</span>
       </div>
       <div class="streak-badge" id="streak-badge">🔥 0</div>
       <div class="coin-badge" id="coin-badge">🪙 0</div>
       <div class="lives-display" id="lives-display">❤️❤️❤️</div>
       <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
-      <div class="progress-text" id="progress-text">0/15</div>
+      <div class="progress-text" id="progress-text">0/0 mastered</div>
     </div>
     <div class="question-card" id="question-card">
       <div class="mascot" id="mascot">🦊</div>
       <div class="level-badge" id="game-level-badge">Level 1</div>
       <div class="question-text" id="question-display">4 × 7 = ?</div>
       <div class="answer-row" id="answer-row">
-        <input class="answer-input" id="answer-input" type="number" min="0" max="100"
-               placeholder="?" autocomplete="off" inputmode="numeric" />
-        <button class="btn btn-primary" id="submit-btn" onclick="submitAnswer()">✓</button>
+        <label for="answer-input" class="sr-only">Your answer</label>
+        <input class="answer-input" id="answer-input" type="text"
+               placeholder="?" autocomplete="off" aria-label="Type your answer"/>
+        <button class="btn btn-primary" id="submit-btn" aria-label="Submit answer">✓</button>
       </div>
       <div class="choice-row" id="choice-row" style="display:none">
-        <button class="choice-btn" onclick="submitChoice(this)"></button>
-        <button class="choice-btn" onclick="submitChoice(this)"></button>
-        <button class="choice-btn" onclick="submitChoice(this)"></button>
-        <button class="choice-btn" onclick="submitChoice(this)"></button>
+        <button class="choice-btn"></button>
+        <button class="choice-btn"></button>
+        <button class="choice-btn"></button>
+        <button class="choice-btn"></button>
       </div>
       <div class="feedback-row" id="feedback-row"></div>
       <div class="timer-display" id="timer-display">⏱ 0.0s</div>
@@ -686,9 +983,9 @@
       </div>
       <div class="answer-log" id="answer-log"></div>
       <div class="results-btns">
-        <button class="btn btn-secondary" onclick="goHome()">🏠 Home</button>
-        <button class="btn btn-green" id="btn-next-level" onclick="nextLevel()">Next Level →</button>
-        <button class="btn btn-blue" onclick="retryLevel()">↺ Retry</button>
+        <button class="btn btn-secondary" id="results-home-btn">🏠 Home</button>
+        <button class="btn btn-green" id="btn-next-level">Next Level →</button>
+        <button class="btn btn-blue" id="retry-level-btn">↺ Retry</button>
       </div>
     </div>
   </div>
@@ -698,7 +995,50 @@
     <div class="logo" style="font-size:2rem;margin-bottom:0">📊 My Stats</div>
     <div style="height:8px"></div>
     <div class="card" style="width:100%">
+      <div class="stats-section-title">📋 Progress Snapshot</div>
+      <div class="stats-summary-grid">
+        <div class="summary-card">
+          <div class="val" id="stats-total-attempts">0</div>
+          <div class="lbl">Total Answers</div>
+        </div>
+        <div class="summary-card">
+          <div class="val" id="stats-total-correct">0</div>
+          <div class="lbl">Total Correct</div>
+        </div>
+        <div class="summary-card">
+          <div class="val" id="stats-accuracy">0%</div>
+          <div class="lbl">Overall Accuracy</div>
+        </div>
+        <div class="summary-card">
+          <div class="val" id="stats-quick-metric">0</div>
+          <div class="lbl">Learned Facts</div>
+        </div>
+      </div>
+      <div class="stats-summary-grid">
+        <div class="summary-card">
+          <div class="val" id="stats-level-unlocked">0/0</div>
+          <div class="lbl">Levels Unlocked</div>
+        </div>
+        <div class="summary-card">
+          <div class="val" id="stats-coins">🪙 0</div>
+          <div class="lbl">Coins</div>
+        </div>
+        <div class="summary-card">
+          <div class="val" id="stats-learned-pct">0%</div>
+          <div class="lbl">Learned Rate</div>
+        </div>
+        <div class="summary-card">
+          <div class="val" id="stats-strong-facts">0</div>
+          <div class="lbl">Strong Facts</div>
+        </div>
+      </div>
       <div class="stats-section-title">🧩 Multiplication Mastery Map</div>
+      <div id="mastery-empty-state" class="muted-note" style="display:none">No facts match this filter yet.</div>
+      <div class="mastery-toolbar">
+        <button class="mastery-filter-btn active" id="mastery-filter-all" data-filter="all">All</button>
+        <button class="mastery-filter-btn" id="mastery-filter-weak" data-filter="weak">Needs Work</button>
+        <button class="mastery-filter-btn" id="mastery-filter-untried" data-filter="untried">Not Tried</button>
+      </div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#ffffff0d"></div>Not tried</div>
         <div class="legend-item"><div class="legend-dot" style="background:#f59e0b44;border:1px solid #f59e0b"></div>Struggling</div>
@@ -709,7 +1049,10 @@
 
       <div class="stats-section-title">📈 Level Performance</div>
       <div class="level-perf-list" id="level-perf-list"></div>
-      <button class="btn btn-secondary" style="width:100%" onclick="goHome()">← Back to Home</button>
+
+      <div class="stats-section-title">🎯 Focus Next</div>
+      <div class="weak-facts-list" id="weak-facts-list"></div>
+      <button class="btn btn-secondary" id="stats-back-btn" style="width:100%">← Back to Home</button>
     </div>
   </div>
 
@@ -724,617 +1067,24 @@
     </div>
   </div>
 
-  <div class="confirm-overlay" id="confirm-overlay">
+	  <div class="confirm-overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text" aria-hidden="true">
     <div class="confirm-content">
       <div class="confirm-title" id="confirm-title">Quit this round?</div>
       <div class="confirm-text" id="confirm-text">Any unsaved answers for this question will be kept private.</div>
       <div class="confirm-actions">
-        <button class="btn btn-secondary" id="confirm-cancel-btn" onclick="hideConfirmOverlay()">Keep Playing</button>
-        <button class="btn btn-blue" id="confirm-accept-btn" onclick="confirmQuitAction()">Quit Round</button>
+        <button class="btn btn-secondary" id="confirm-cancel-btn">Keep Playing</button>
+        <button class="btn btn-blue" id="confirm-accept-btn">Quit Round</button>
       </div>
     </div>
   </div>
 
 </div>
 
-<script>
-/* ===================== DATA ===================== */
-const LEVELS = [
-  { name:'×1 & ×2',  friendly:'Easy Start 🌟',      color:'#f59e0b', tables:[1,2] },
-  { name:'×5 & ×10', friendly:'Getting Warmer 🔆',   color:'#10b981', tables:[5,10] },
-  { name:'×3 & ×4',  friendly:'Level Up! 🚀',        color:'#3b82f6', tables:[3,4] },
-  { name:'×6 & ×7',  friendly:'Getting Tricky 🧠',   color:'#ec4899', tables:[6,7] },
-  { name:'×8 & ×9',  friendly:'Almost There 💪',     color:'#8b5cf6', tables:[8,9] },
-  { name:'Mixed Easy',friendly:'Mix It Up 🎲',        color:'#f97316', tables:[1,2,3,4,5,10] },
-  { name:'Mixed Hard',friendly:'Hard Mode 🔥',        color:'#06b6d4', tables:[6,7,8,9] },
-  { name:'Full Blast!',friendly:'FULL BLAST 💥',      color:'#ef4444', tables:[1,2,3,4,5,6,7,8,9,10] },
-];
-const TOTAL_Q = 15;
-let answerMode = 'type'; // 'type' | 'choice'
+<script src="app.js"></script>
 
-/* ===================== STATE ===================== */
-let gameState = {
-  currentLevel: 0,
-  questions: [],
-  qIndex: 0,
-  results: [],
-  streak: 0,
-  maxStreak: 0,
-  questionStart: 0,
-  timerInterval: null,
-  currentA: 0,
-  currentB: 0,
-  lives: 3,
-  maxLives: 3,
-};
-
-/* ===================== STORAGE ===================== */
-function loadData() {
-  try { return JSON.parse(localStorage.getItem('mm_data') || '{}'); } catch { return {}; }
-}
-function saveData(d) {
-  localStorage.setItem('mm_data', JSON.stringify(d));
-}
-function getData() {
-  let d = loadData();
-  if (!d.unlocked) d.unlocked = [true,...Array(7).fill(false)];
-  if (!d.levelStats) d.levelStats = Array(8).fill(null).map(()=>({attempts:0,correct:0,totalTime:0,bestTime:Infinity,bestAccuracy:0}));
-  if (!d.factStats) {
-    d.factStats = {};
-    for(let a=1;a<=10;a++) for(let b=1;b<=10;b++) d.factStats[`${a}x${b}`]={attempts:0,correct:0};
-  }
-  if (!d.coins) d.coins = 0;
-  return d;
-}
-
-function resetAll() {
-  localStorage.removeItem('mm_data');
-  renderHome();
-}
-
-function toggleMode() {
-  answerMode = answerMode === 'type' ? 'choice' : 'type';
-  const btn = document.getElementById('mode-toggle');
-  if (btn) btn.textContent = answerMode === 'type' ? '⌨️ Type' : '🔘 Pick';
-  localStorage.setItem('mm_mode', answerMode);
-}
-
-function toggleTheme() {
-  const isLight = document.body.classList.toggle('light');
-  const btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = isLight ? '🌙 Dark' : '☀️ Bright';
-  localStorage.setItem('mm_theme', isLight ? 'light' : 'dark');
-}
-
-/* ===================== RENDER HOME ===================== */
-function renderHome() {
-  const d = getData();
-  const grid = document.getElementById('level-grid');
-  grid.innerHTML = '';
-  LEVELS.forEach((lvl,i) => {
-    const unlocked = d.unlocked[i];
-    const ls = d.levelStats[i];
-    const acc = ls.attempts > 0 ? Math.round(ls.correct/ls.attempts*100) : 0;
-    const stars = acc >= 93 ? '⭐⭐⭐' : acc >= 80 ? '⭐⭐' : acc > 0 ? '⭐' : '';
-    const btn = document.createElement('div');
-    btn.className = 'level-btn ' + (unlocked ? 'unlocked' : 'locked');
-    btn.style.cssText = unlocked
-      ? `background:linear-gradient(135deg,${lvl.color}22,${lvl.color}44);border-color:${lvl.color}55;color:${lvl.color}`
-      : '';
-    if(unlocked) {
-      btn.innerHTML = `<div class="lvl-num">${i+1}</div><div class="lvl-name">${lvl.friendly}</div><div class="lvl-sub">${lvl.name}</div><div class="lvl-hint">${lvl.hint || 'Tap to start'}</div><div class="lvl-stars">${stars}</div>`;
-      btn.onclick = () => startLevel(i);
-    } else {
-      btn.innerHTML = `<div class="lvl-num" style="opacity:.3">${i+1}</div><div class="lvl-name" style="margin-top:8px">Locked</div>`;
-    }
-    grid.appendChild(btn);
-  });
-  const homeCoins = document.getElementById('home-coins');
-  if (homeCoins) homeCoins.textContent = `🪙 ${d.coins || 0} coins`;
-  const themeBtn = document.getElementById('theme-btn');
-  if (themeBtn) themeBtn.textContent = document.body.classList.contains('light') ? '🌙 Dark' : '☀️ Bright';
-}
-
-/* ===================== GENERATE QUESTIONS ===================== */
-function generateQuestions(levelIdx) {
-  const tables = LEVELS[levelIdx].tables;
-  let pool = [];
-  tables.forEach(t => {
-    for(let b=1;b<=10;b++) pool.push([t,b]);
-  });
-  // shuffle
-  pool = pool.sort(() => Math.random()-.5);
-  // pick 15 unique (or repeat if pool small)
-  let result = [];
-  while(result.length < TOTAL_Q) {
-    result.push(...pool.sort(()=>Math.random()-.5));
-  }
-  return result.slice(0, TOTAL_Q);
-}
-
-function generateChoices(correct) {
-  const opts = new Set([correct]);
-  const offsets = [-2,-1,1,2,3,-3,4,-4,5,-5].sort(()=>Math.random()-.5);
-  for (const o of offsets) {
-    if (opts.size >= 4) break;
-    const v = correct + o;
-    if (v > 0 && v !== correct) opts.add(v);
-  }
-  return [...opts].sort(() => Math.random() - .5);
-}
-
-/* ===================== START LEVEL ===================== */
-function startLevel(idx) {
-  gameState.currentLevel = idx;
-  gameState.questions = generateQuestions(idx);
-  gameState.qIndex = 0;
-  gameState.results = [];
-  gameState.streak = 0;
-  gameState.maxStreak = 0;
-  gameState.lives = 3;
-  gameState.maxLives = 3;
-
-  document.getElementById('game-level-badge').textContent = `Level ${idx+1} — ${LEVELS[idx].name}`;
-  showScreen('game');
-  loadQuestion();
-  updateLives();
-  const d = getData();
-  document.getElementById('coin-badge').textContent = `🪙 ${d.coins || 0}`;
-}
-
-function loadQuestion() {
-  clearInterval(gameState.timerInterval);
-  const [a,b] = gameState.questions[gameState.qIndex];
-  gameState.currentA = a;
-  gameState.currentB = b;
-  gameState.questionStart = Date.now();
-
-  document.getElementById('question-display').textContent = `${a} × ${b} = ?`;
-  document.getElementById('feedback-row').innerHTML = '';
-  document.getElementById('answer-input').value = '';
-  document.getElementById('answer-input').className = 'answer-input';
-  document.getElementById('answer-input').focus();
-
-  updateProgress();
-  updateLives();
-
-  // Show/hide type vs choice UI
-  const isChoice = answerMode === 'choice';
-  document.getElementById('answer-row').style.display = isChoice ? 'none' : '';
-  document.getElementById('choice-row').style.display = isChoice ? '' : 'none';
-  document.getElementById('submit-btn').style.display = isChoice ? 'none' : '';
-
-  if (isChoice) {
-    const correct = gameState.currentA * gameState.currentB;
-    const choices = generateChoices(correct);
-    const btns = document.querySelectorAll('.choice-btn');
-    btns.forEach((btn, i) => {
-      btn.textContent = choices[i];
-      btn.className = 'choice-btn';
-      btn.dataset.val = choices[i];
-      btn.onclick = function() { submitChoice(this); };
-    });
-  }
-
-  // Timer tick
-  gameState.timerInterval = setInterval(() => {
-    const elapsed = ((Date.now() - gameState.questionStart)/1000).toFixed(1);
-    document.getElementById('timer-display').textContent = `⏱ ${elapsed}s`;
-  }, 100);
-}
-
-function updateProgress() {
-  const done = gameState.qIndex;
-  const pct = (done/TOTAL_Q)*100;
-  document.getElementById('progress-bar').style.width = pct+'%';
-  document.getElementById('progress-text').textContent = `${done}/${TOTAL_Q}`;
-  document.getElementById('streak-badge').textContent = `🔥 ${gameState.streak}`;
-}
-
-function updateLives() {
-  const icons = '❤️'.repeat(gameState.lives) + '🖤'.repeat(gameState.maxLives - gameState.lives);
-  document.getElementById('lives-display').textContent = icons;
-}
-
-function awardCoins(n) {
-  const d = getData();
-  d.coins = (d.coins || 0) + n;
-  saveData(d);
-  document.getElementById('coin-badge').textContent = `🪙 ${d.coins}`;
-}
-
-function submitChoice(btn) {
-  document.querySelectorAll('.choice-btn').forEach(b => b.onclick = null);
-  document.getElementById('answer-input').value = btn.dataset.val;
-  submitAnswer();
-}
-
-/* ===================== SUBMIT ===================== */
-function submitAnswer() {
-  const input = document.getElementById('answer-input');
-  const val = parseInt(input.value);
-  if(isNaN(val) || input.value.trim() === '') return;
-
-  clearInterval(gameState.timerInterval);
-  const elapsed = (Date.now() - gameState.questionStart);
-  const a = gameState.currentA, b = gameState.currentB;
-  const correct = a * b;
-  const isCorrect = val === correct;
-  const key = `${a}x${b}`;
-
-  // Update fact stats
-  const d = getData();
-  d.factStats[key].attempts++;
-  if(isCorrect) d.factStats[key].correct++;
-  saveData(d);
-
-  // Record result
-  gameState.results.push({ a, b, answer: val, correct: isCorrect, time: elapsed });
-
-  // UI feedback
-  const fb = document.getElementById('feedback-row');
-  if(isCorrect) {
-    gameState.streak++;
-    gameState.maxStreak = Math.max(gameState.maxStreak, gameState.streak);
-    input.className = 'answer-input correct-flash';
-    fb.innerHTML = `<span class="feedback-correct">✓ Correct! ${correct} 🎉</span>`;
-    if(gameState.streak > 1) fb.innerHTML += ` <span style="color:var(--accent1);font-size:.9rem">🔥 Streak ${gameState.streak}!</span>`;
-    if (gameState.streak >= 5) {
-      animateMascot('dance');
-    } else {
-      animateMascot('happy');
-    }
-    const milestones = { 3: 'ON FIRE! 🔥', 5: 'UNSTOPPABLE! ⚡', 10: 'MATH WIZARD! 🧙' };
-    if (milestones[gameState.streak]) showMilestone(milestones[gameState.streak]);
-    miniBurst();
-    // Award coins based on streak
-    if (gameState.streak >= 5) {
-      awardCoins(3);
-    } else if (gameState.streak >= 3) {
-      awardCoins(2);
-    } else {
-      awardCoins(1);
-    }
-  } else {
-    gameState.streak = 0;
-    gameState.lives--;
-    updateLives();
-    animateMascot('sad');
-    document.getElementById('wrong-eq').textContent = `${a} × ${b} = ${correct}`;
-    const wo = document.getElementById('wrong-overlay');
-    wo.style.display = 'flex';
-    setTimeout(() => { wo.style.display = 'none'; }, 1300);
-    input.className = 'answer-input shake';
-    fb.innerHTML = `<span class="feedback-wrong">✗ Answer: ${a} × ${b} = ${correct}</span>`;
-    if (gameState.lives <= 0) {
-      setTimeout(() => showResults(), 1400);
-      return;
-    }
-  }
-  document.getElementById('streak-badge').textContent = `🔥 ${gameState.streak}`;
-
-  // Next question after short delay
-  setTimeout(() => {
-    gameState.qIndex++;
-    if(gameState.qIndex >= TOTAL_Q) {
-      showResults();
-    } else {
-      loadQuestion();
-    }
-  }, isCorrect ? 700 : 1400);
-}
-
-/* ===================== RESULTS ===================== */
-function showResults() {
-  const res = gameState.results;
-  const lvl = gameState.currentLevel;
-  const correct = res.filter(r=>r.correct).length;
-  const accuracy = Math.round((correct/TOTAL_Q)*100);
-  const times = res.filter(r=>r.correct).map(r=>r.time);
-  const avgTime = times.length ? (times.reduce((a,b)=>a+b,0)/times.length/1000).toFixed(1) : '—';
-  const passed = gameState.lives > 0 && correct >= 10;
-
-  // Stars
-  let stars = '';
-  if(accuracy >= 93) stars = '⭐⭐⭐';
-  else if(accuracy >= 80) stars = '⭐⭐';
-  else if(accuracy >= 60) stars = '⭐';
-  else stars = '💫';
-
-  // Save level stats
-  const d = getData();
-  d.levelStats[lvl].attempts += TOTAL_Q;
-  d.levelStats[lvl].correct += correct;
-  d.levelStats[lvl].totalTime += times.reduce((a,b)=>a+b,0);
-  if(times.length) d.levelStats[lvl].bestTime = Math.min(d.levelStats[lvl].bestTime, Math.min(...times)/1000);
-  d.levelStats[lvl].bestAccuracy = Math.max(d.levelStats[lvl].bestAccuracy, accuracy);
-
-  // Unlock next
-  if(passed && lvl < 7) d.unlocked[lvl+1] = true;
-  saveData(d);
-
-  // Render
-  // Animate stars dropping in one by one
-  const starEl = document.getElementById('results-stars');
-  starEl.textContent = '';
-  showScreen('results');
-
-  const starCount = stars === '⭐⭐⭐' ? 3 : stars === '⭐⭐' ? 2 : stars === '⭐' ? 1 : 0;
-  let displayed = '';
-  for (let i = 0; i < starCount; i++) {
-    setTimeout(() => {
-      displayed += '⭐';
-      starEl.textContent = displayed;
-      starEl.style.animation = 'none';
-      void starEl.offsetWidth;
-      starEl.style.animation = 'star-drop .4s cubic-bezier(.34,1.56,.64,1)';
-    }, 300 + i * 400);
-  }
-  if (starCount === 0) setTimeout(() => { starEl.textContent = '💫'; }, 300);
-
-  let title, sub;
-  if(accuracy === 100) { title='Perfect Score! 🏆'; }
-  else if(accuracy >= 93) { title='Amazing! 🎉'; }
-  else if(accuracy >= 80) { title='Great Job! 👏'; }
-  else if(passed) { title='Good Try! 💪'; }
-  else { title='Keep Practicing! 🌱'; }
-  sub = passed
-    ? `Level ${lvl+1} complete! ${lvl<7?'Level '+(lvl+2)+' unlocked! 🔓':''}`
-    : `${correct}/15 correct — you ran out of hearts! Try again 💪`;
-
-  document.getElementById('results-title').textContent = title;
-  document.getElementById('results-sub').textContent = sub;
-  document.getElementById('r-accuracy').textContent = accuracy+'%';
-  document.getElementById('r-avg-time').textContent = avgTime+'s';
-  document.getElementById('r-streak').textContent = gameState.maxStreak+'🔥';
-
-  // Answer log
-  const log = document.getElementById('answer-log');
-  log.innerHTML = res.map(r => {
-    const ans = r.correct ? r.a*r.b : `${r.answer} ✗`;
-    const icon = r.correct ? '✅' : '❌';
-    const spd = (r.time/1000).toFixed(1)+'s';
-    return `<div class="answer-log-row">
-      <span class="q">${r.a} × ${r.b}</span>
-      <span style="flex:1;text-align:center;font-weight:700;color:${r.correct?'var(--correct)':'var(--wrong)'}">${ans}</span>
-      <span class="status">${icon}</span>
-      <span class="spd">${spd}</span>
-    </div>`;
-  }).join('');
-
-  // Next level btn
-  const btnNext = document.getElementById('btn-next-level');
-  if(passed && lvl < 7) {
-    btnNext.style.display = ''; btnNext.textContent = `Level ${lvl+2} →`;
-  } else {
-    btnNext.style.display = 'none';
-  }
-
-  if(accuracy >= 93) launchConfetti();
-}
-
-function nextLevel() { startLevel(gameState.currentLevel + 1); }
-function retryLevel() { startLevel(gameState.currentLevel); }
-function goHome() { showScreen('home'); renderHome(); }
-function confirmQuit() {
-  const o = document.getElementById('confirm-overlay');
-  document.getElementById('confirm-title').textContent = 'Quit this round?';
-  document.getElementById('confirm-text').textContent = 'Want to leave now? Your progress is saved and your streak will continue when you return.';
-  document.getElementById('confirm-accept-btn').textContent = 'Quit Round';
-  document.getElementById('confirm-accept-btn').onclick = confirmQuitAction;
-  document.getElementById('confirm-cancel-btn').textContent = 'Keep Playing';
-  document.getElementById('confirm-cancel-btn').onclick = hideConfirmOverlay;
-  o.style.display = 'flex';
-}
-function confirmQuitAction() {
-  hideConfirmOverlay();
-  goHome();
-}
-function showResetConfirm() {
-  const o = document.getElementById('confirm-overlay');
-  document.getElementById('confirm-title').textContent = 'Reset all progress?';
-  document.getElementById('confirm-text').textContent = 'This clears all level unlocks, streak history, and coins. This action cannot be undone.';
-  document.getElementById('confirm-accept-btn').textContent = 'Reset';
-  document.getElementById('confirm-accept-btn').onclick = function(){ confirmResetAll(); };
-  document.getElementById('confirm-cancel-btn').textContent = 'Cancel';
-  document.getElementById('confirm-cancel-btn').onclick = hideConfirmOverlay;
-  o.style.display = 'flex';
-}
-function confirmResetAll() {
-  hideConfirmOverlay();
-  resetAll();
-}
-function hideConfirmOverlay() {
-  document.getElementById('confirm-overlay').style.display = 'none';
-}
-
-/* ===================== STATS ===================== */
-function showStats() {
-  const d = getData();
-  renderMasteryGrid(d);
-  renderLevelPerf(d);
-  showScreen('stats');
-}
-
-function renderMasteryGrid(d) {
-  const grid = document.getElementById('mastery-grid');
-  grid.innerHTML = '';
-  // Top-left corner
-  const corner = document.createElement('div');
-  corner.className='mg-cell header'; corner.textContent='×';
-  grid.appendChild(corner);
-  // Column headers
-  for(let c=1;c<=10;c++) {
-    const h = document.createElement('div');
-    h.className='mg-cell header'; h.textContent=c;
-    grid.appendChild(h);
-  }
-  // Rows
-  for(let a=1;a<=10;a++) {
-    const rh = document.createElement('div');
-    rh.className='mg-cell header'; rh.textContent=a;
-    grid.appendChild(rh);
-    for(let b=1;b<=10;b++) {
-      const key = `${a}x${b}`;
-      const fs = d.factStats[key] || {attempts:0,correct:0};
-      const cell = document.createElement('div');
-      cell.className = 'mg-cell';
-      const acc = fs.attempts>0 ? fs.correct/fs.attempts : -1;
-      if(acc < 0) cell.classList.add('untried');
-      else if(acc < 0.7) cell.classList.add('struggling');
-      else if(acc < 0.9) cell.classList.add('learning');
-      else cell.classList.add('mastered');
-      cell.textContent = fs.attempts > 0 ? `${a*b}` : '';
-      cell.title = `${a}×${b}=${a*b} | ${fs.correct}/${fs.attempts} correct`;
-      grid.appendChild(cell);
-    }
-  }
-}
-
-function renderLevelPerf(d) {
-  const list = document.getElementById('level-perf-list');
-  list.innerHTML = '';
-  LEVELS.forEach((lvl,i) => {
-    const ls = d.levelStats[i];
-    const acc = ls.attempts>0 ? Math.round(ls.correct/ls.attempts*100) : 0;
-    const avgSpd = ls.correct>0 ? (ls.totalTime/ls.correct/1000).toFixed(1)+'s' : '—';
-    const div = document.createElement('div');
-    div.className = 'level-perf-row';
-    div.innerHTML = `
-      <div class="lpr-lvl" style="color:${lvl.color}">Lv${i+1}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:.75rem;color:var(--text2);margin-bottom:4px">${lvl.name}</div>
-        <div class="lpr-bar-wrap"><div class="lpr-bar" style="width:${acc}%;background:linear-gradient(90deg,${lvl.color},${lvl.color}88)"></div></div>
-      </div>
-      <div class="lpr-pct">${acc>0?acc+'%':'—'}</div>
-      <div class="lpr-spd">⏱${avgSpd}</div>
-    `;
-    list.appendChild(div);
-  });
-}
-
-/* ===================== MILESTONE ===================== */
-function showMilestone(text) {
-  const overlay = document.getElementById('milestone-overlay');
-  document.getElementById('milestone-content').textContent = text;
-  overlay.style.display = 'flex';
-  setTimeout(() => { overlay.style.display = 'none'; }, 1500);
-}
-
-/* ===================== MASCOT ===================== */
-function animateMascot(type) {
-  const m = document.getElementById('mascot');
-  if (!m) return;
-  m.className = 'mascot';
-  void m.offsetWidth; // reflow to restart animation
-  m.className = `mascot ${type}`;
-}
-
-function miniBurst() {
-  const card = document.getElementById('question-card');
-  const rect = card.getBoundingClientRect();
-  const colors = ['#f59e0b','#ec4899','#10b981','#3b82f6'];
-  for (let i = 0; i < 8; i++) {
-    const p = document.createElement('div');
-    p.style.cssText = `
-      position:fixed;
-      left:${rect.left + rect.width/2}px;
-      top:${rect.top + rect.height/2}px;
-      width:8px;height:8px;border-radius:50%;
-      background:${colors[i%colors.length]};
-      pointer-events:none;z-index:999;
-      animation:mini-burst .6s ease forwards;
-      --dx:${(Math.random()-0.5)*120}px;
-      --dy:${(Math.random()-0.5)*80 - 40}px;
-    `;
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 700);
-  }
-}
-
-/* ===================== CONFETTI ===================== */
-function launchConfetti() {
-  const colors = ['#f59e0b','#ec4899','#10b981','#3b82f6','#8b5cf6','#f97316'];
-  for(let i=0;i<60;i++) {
-    setTimeout(()=>{
-      const p = document.createElement('div');
-      p.className = 'confetti-piece';
-      p.style.cssText = `
-        left:${Math.random()*100}vw;
-        top:-10px;
-        background:${colors[Math.floor(Math.random()*colors.length)]};
-        width:${6+Math.random()*8}px;
-        height:${6+Math.random()*8}px;
-        animation-duration:${1.5+Math.random()*2}s;
-        animation-delay:${Math.random()*.5}s;
-        transform:rotate(${Math.random()*360}deg);
-      `;
-      document.body.appendChild(p);
-      setTimeout(()=>p.remove(), 3500);
-    }, i*25);
-  }
-}
-
-/* ===================== SCREEN SWITCHING ===================== */
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+name).classList.add('active');
-}
-
-/* ===================== KEYBOARD ===================== */
-document.getElementById('answer-input').addEventListener('keydown', e => {
-  if(e.key === 'Enter') submitAnswer();
-});
-
-// Prevent negative numbers / non-numeric
-document.getElementById('answer-input').addEventListener('input', function() {
-  if(this.value < 0) this.value = '';
-  if(this.value.length > 3) this.value = this.value.slice(0,3);
-});
-
-/* ===================== INIT ===================== */
-answerMode = localStorage.getItem('mm_mode') || 'type';
-let reduceMotion = localStorage.getItem('mm_motion') === '1';
-if (reduceMotion) {
-  document.body.classList.add('motion-off');
-}
-if (localStorage.getItem('mm_theme') === 'light') {
-  document.body.classList.add('light');
-}
-function updateModeText() {
-  const btn = document.getElementById('mode-toggle');
-  if (btn) btn.textContent = answerMode === 'type' ? '⌨️ Type' : '🔘 Pick';
-}
-function updateMotionButton() {
-  const motionBtn = document.getElementById('motion-btn');
-  if (motionBtn) motionBtn.textContent = reduceMotion ? '🎬 Motion OFF' : '🎬 Motion ON';
-}
-function toggleMode() {
-  answerMode = answerMode === 'type' ? 'choice' : 'type';
-  updateModeText();
-  localStorage.setItem('mm_mode', answerMode);
-}
-function toggleMotion() {
-  reduceMotion = !reduceMotion;
-  document.body.classList.toggle('motion-off', reduceMotion);
-  updateMotionButton();
-  localStorage.setItem('mm_motion', reduceMotion ? '1' : '0');
-}
-function updateProgress() {
-  const done = gameState.qIndex;
-  const pct = (done / TOTAL_Q) * 100;
-  document.getElementById('progress-bar').style.width = pct + '%';
-  document.getElementById('progress-text').textContent = `${done}/${TOTAL_Q} done`;
-  document.getElementById('streak-badge').textContent = `🔥 ${gameState.streak}`;
-  const qCount = document.getElementById('question-count');
-  if (qCount) qCount.textContent = `Q ${Math.min(done + 1, TOTAL_Q)}/${TOTAL_Q}`;
-}
-renderHome();
-updateModeText();
-updateMotionButton();
-</script>
 </body>
 </html>
+
 
 
 
