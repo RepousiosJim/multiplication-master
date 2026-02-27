@@ -90,8 +90,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    opacity: 0;
-    transform: translateY(10px);
+    opacity: 1;
+    transform: none;
   }
   .screen.active.screen-in {
     animation: routeFade 260ms cubic-bezier(.34,1.56,.64,1);
@@ -906,7 +906,7 @@
 <div class="app" id="app">
 
   <!-- HOME SCREEN -->
-  <div class="screen active" id="screen-home">
+  <div class="screen active screen-in" id="screen-home">
     <div class="logo">🌟 Multiplication Master</div>
     <div class="tagline">Learn your times tables — one level at a time! 🚀</div>
     <div class="card" style="margin-bottom:16px">

@@ -1,14 +1,16 @@
 ﻿/* ===================== DATA ===================== */
 const LEVELS = [
-  // Progression: easy -> medium -> hard (hardest tables prioritize 6, 7, 8).
-  { name:'×1 & ×2',  friendly:'Easy Start',         color:'#f59e0b', tables:[1,2] },
-  { name:'×3 & ×4',  friendly:'Getting Warmer',     color:'#10b981', tables:[3,4] },
-  { name:'×5 & ×10', friendly:'Level Up!',          color:'#3b82f6', tables:[5,10] },
-  { name:'Mixed Easy',friendly:'Mix It Up',         color:'#8b5cf6', tables:[1,2,3,4,5,10] },
-  { name:'×6 & ×7',  friendly:'Bracing for Impact', color:'#ec4899', tables:[6,7] },
-  { name:'×8 & ×9',  friendly:'Hard Mode 2',        color:'#f97316', tables:[8,9] },
-  { name:'Mixed Hard',friendly:'Hard Mode',         color:'#06b6d4', tables:[6,7,8] },
-  { name:'Full Blast!',friendly:'FULL BLAST',       color:'#ef4444', tables:[1,2,3,4,5,6,7,8,9,10] },
+  // Progression: single-table levels from ×1 to ×10.
+  { name:'×1', friendly:'Easy Start',           color:'#f59e0b', tables:[1] },
+  { name:'×2', friendly:'Steady Start',         color:'#f97316', tables:[2] },
+  { name:'×3', friendly:'Third Time',           color:'#10b981', tables:[3] },
+  { name:'×4', friendly:'Four to Four',         color:'#3b82f6', tables:[4] },
+  { name:'×5', friendly:'Fizz and Five',        color:'#8b5cf6', tables:[5] },
+  { name:'×6', friendly:'Six Pack',             color:'#ec4899', tables:[6] },
+  { name:'×7', friendly:'Lucky Sevens',         color:'#14b8a6', tables:[7] },
+  { name:'×8', friendly:'Octave Boost',         color:'#f59e0b', tables:[8] },
+  { name:'×9', friendly:'Niner’s Dash',         color:'#ef4444', tables:[9] },
+  { name:'×10', friendly:'Final Countdown',     color:'#06b6d4', tables:[10] },
 ];
 const TOTAL_Q = 15;
 let answerMode = 'type'; // 'type' | 'choice'
@@ -827,22 +829,52 @@ function launchConfetti() {
 function showScreen(name) {
   const target = el('screen-'+name);
   if (!target) return;
+  const previous = document.querySelector('.screen.active');
+  if (previous && previous !== target) {
+    previous.classList.remove('screen-in');
+  }
   gameState.screen = name;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   target.classList.add('active');
+  requestAnimationFrame(() => {
+    target.classList.add('screen-in');
+  });
+  target.classList.add('screen-in');
 }
 
 /* ===================== KEYBOARD ===================== */
-el('answer-input').addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  if (answerMode !== 'type') return;
-  e.preventDefault();
+function bindAnswerInputHandlers() {
   const input = getAnswerInput();
   if (!input) return;
-  // Keep only digits and keep the current behavior for both 1-digit and 2-digit answers.
-  input.value = getSanitizedNumericAnswer();
-  submitAnswer();
-});
+
+  input.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (answerMode !== 'type') return;
+    e.preventDefault();
+    input.value = getSanitizedNumericAnswer();
+    submitAnswer();
+  });
+
+  input.addEventListener('input', function() {
+    const currentInput = input;
+    const sanitized = sanitizeNumericInput(currentInput.value);
+
+    currentInput.value = sanitized;
+    const expectedLen = getAnswerLengthFromInput();
+    if (currentInput.value.length > expectedLen) currentInput.value = currentInput.value.slice(0,expectedLen);
+
+    if (!shouldAutoSubmitByFastMode(currentInput.value)) return;
+
+    gameState.fastModeUsed = true;
+    submitAnswer();
+  });
+
+  input.addEventListener('blur', function() {
+    const currentInput = input;
+    const sanitized = sanitizeNumericInput(currentInput.value);
+    currentInput.value = sanitized;
+  });
+}
 
 // Keep number format handling centralized for all input methods.
 function getAnswerLengthFromInput() {
@@ -879,26 +911,6 @@ function shouldAutoSubmitByFastMode(rawValue) {
   return hasExactAnswerLength(rawValue);
 }
 
-el('answer-input').addEventListener('input', function() {
-  const input = this;
-  // Rebuild the field using only digits so pasted text never breaks answer checks.
-  const sanitized = sanitizeNumericInput(input.value);
-
-  input.value = sanitized;
-  const expectedLen = getAnswerLengthFromInput();
-  if (input.value.length > expectedLen) input.value = input.value.slice(0,expectedLen);
-
-  if (!shouldAutoSubmitByFastMode(input.value)) return;
-
-  gameState.fastModeUsed = true;
-  submitAnswer();
-});
-el('answer-input').addEventListener('blur', function() {
-  // Always normalize on blur so pasted/IME artifacts can’t remain.
-  const sanitized = sanitizeNumericInput(this.value);
-  this.value = sanitized;
-});
-
 /* ===================== INIT ===================== */
 answerMode = (() => {
   const savedMode = getStorageValue(STORAGE_KEYS.mode);
@@ -919,6 +931,7 @@ function updateFastModeButton() {
 renderHome();
 updateModeText();
 updateFastModeButton();
+bindAnswerInputHandlers();
 initAppControls();
 showScreen(APP_SCREEN.HOME);
 
