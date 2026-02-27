@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -264,24 +264,6 @@
     font-size: .9rem; margin-top: 8px;
   }
 
-  .numpad { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; width: 100%; max-width: 240px; }
-  .numpad-row { display: flex; gap: 8px; justify-content: center; }
-  .np-btn {
-    font-family: 'Fredoka One', cursive;
-    font-size: 1.5rem;
-    width: 64px; height: 64px;
-    border-radius: 14px;
-    border: 2px solid #ffffff18;
-    background: var(--card2);
-    color: var(--text);
-    cursor: pointer;
-    transition: transform .1s, background .1s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .np-btn:active { transform: scale(.92); background: var(--accent4); }
-  .np-wide { width: 136px; }
-  .np-del { background: #ef444422; border-color: #ef444444; color: #ef4444; }
-
   .choice-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 8px; width: 100%; max-width: 340px; }
   .choice-btn {
     font-family: 'Fredoka One', cursive;
@@ -459,13 +441,167 @@
   color: var(--correct);
 }
 
+.confirm-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #05020fcc;
+  backdrop-filter: blur(6px);
+  padding: 16px;
+}
+.confirm-content {
+  width: min(460px, 92vw);
+  background: var(--card);
+  border: 1px solid #ffffff18;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 12px 40px #00000066;
+  animation: fadeIn .2s ease;
+}
+.confirm-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.4rem;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.confirm-text {
+  color: var(--text2);
+  font-size: .95rem;
+  line-height: 1.35;
+  margin-bottom: 18px;
+}
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
   /* Responsive */
   @media(max-width:480px) {
     .level-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .level-btn .lvl-num { font-size: 1.5rem; }
+    .level-btn { min-height: 128px; }
+    .level-btn .lvl-hint { display: none; }
     .stats-grid { grid-template-columns: repeat(3,1fr); gap: 8px; }
     .question-text { font-size: clamp(3rem,16vw,4.5rem); }
     .answer-input { font-size: 1.6rem; padding: 10px 14px; }
+    .game-top { width: 100%; flex-direction: column; align-items: stretch; }
+  }
+
+  .ui-toolbar {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    margin: 8px 0 16px;
+  }
+  .ui-chip {
+    background: #ffffff14;
+    border: 1px solid #ffffff22;
+    border-radius: 50px;
+    padding: 6px 12px;
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--text2);
+    text-align: center;
+  }
+  .ui-chip.good {
+    color: var(--accent1);
+  }
+  .muted-note {
+    font-size: .8rem;
+    color: var(--text2);
+    text-align: center;
+    margin: 8px 0;
+  }
+
+  .screen { width: 100%; max-width: 760px; }
+  .card { transition: transform .2s ease, box-shadow .2s ease; }
+  .card:hover { box-shadow: 0 12px 36px #00000055; }
+
+  .btn {
+    min-height: 48px;
+    text-align: center;
+  }
+  .btn:hover { filter: brightness(1.06); }
+
+  .levels-title strong { font-size: 1.75rem; }
+  .level-btn {
+    min-height: 138px;
+    aspect-ratio: 1.14;
+    padding: 8px;
+  }
+  .level-btn .lvl-num { font-size: 1.85rem; }
+  .level-btn .lvl-hint {
+    font-size: .58rem;
+    opacity: .8;
+    line-height: 1.2;
+    margin-top: 3px;
+    color: var(--text2);
+  }
+  .level-btn.locked { min-height: 96px; }
+  .level-btn.locked::after { font-size: 1.2rem; }
+
+  .game-header {
+    background: #ffffff14;
+    border: 1px solid #ffffff18;
+    border-radius: 16px;
+    padding: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .game-top {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+  }
+  #question-count {
+    background: var(--card2);
+    border-radius: 50px;
+    padding: 4px 12px;
+    min-width: 92px;
+    text-align: center;
+    color: var(--accent1);
+    font-family: 'Fredoka One', cursive;
+    font-size: .82rem;
+  }
+
+  .question-card {
+    padding: 56px 24px 30px;
+  }
+  .question-text {
+    font-size: clamp(3.2rem, 13vw, 5.2rem);
+    margin-bottom: 28px;
+  }
+  .answer-input {
+    font-size: 2.1rem;
+    min-height: 68px;
+  }
+  .choice-row { max-width: 400px; gap: 10px; }
+  .choice-btn {
+    font-size: 1.7rem;
+    min-height: 70px;
+    width: calc(50% - 5px);
+    padding: 14px 10px;
+  }
+
+  .motion-off .mascot,
+  .motion-off .mascot-happy,
+  .motion-off .mascot-sad,
+  .motion-off .mascot-dance,
+  .motion-off .milestone-content,
+  .motion-off .confetti-piece,
+  .motion-off .wrong-overlay-content,
+  .motion-off *::before,
+  .motion-off *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mascot { animation: none !important; }
+    .milestone-overlay,
+    .milestone-content,
+    .wrong-overlay-content,
+    .confetti-piece {
+      animation: none !important;
+    }
   }
 </style>
 </head>
@@ -480,22 +616,27 @@
     <div class="card" style="margin-bottom:16px">
       <div class="levels-title">Choose Your Level</div>
       <div class="level-grid level-colors" id="level-grid"></div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <div class="ui-toolbar">
         <button class="btn btn-secondary" onclick="showStats()">📊 My Stats</button>
         <button class="btn btn-secondary" id="mode-toggle" onclick="toggleMode()">⌨️ Type</button>
         <button class="btn btn-secondary" id="theme-btn" onclick="toggleTheme()">☀️ Bright</button>
-        <button class="btn btn-secondary" onclick="if(confirm('Reset ALL progress?')){resetAll();}">🗑 Reset</button>
+        <button class="btn btn-secondary" id="motion-btn" onclick="toggleMotion()">Motion</button>
+        <button class="btn btn-secondary" onclick="showResetConfirm()">🗑 Reset</button>
       </div>
     </div>
-  <div style="text-align:center;margin:8px 0 4px">
+  <div class="ui-chip" style="margin:8px 0 4px">
     <span id="home-coins" style="font-family:'Fredoka One',cursive;color:var(--accent1);font-size:1.1rem"></span>
   </div>
-    <p style="font-size:.75rem;color:#4b5563;text-align:center">Answer 15 questions correctly to unlock the next level ⭐</p>
+    <p class="muted-note">Answer 15 questions, get 10+ correct to unlock the next level.</p>
   </div>
 
   <!-- GAME SCREEN -->
   <div class="screen" id="screen-game">
     <div class="game-header">
+      <div class="game-top">
+        <button class="btn btn-secondary" onclick="confirmQuit()">← Quit</button>
+        <span id="question-count" class="ui-chip good">Q 1/15</span>
+      </div>
       <div class="streak-badge" id="streak-badge">🔥 0</div>
       <div class="coin-badge" id="coin-badge">🪙 0</div>
       <div class="lives-display" id="lives-display">❤️❤️❤️</div>
@@ -508,29 +649,8 @@
       <div class="question-text" id="question-display">4 × 7 = ?</div>
       <div class="answer-row" id="answer-row">
         <input class="answer-input" id="answer-input" type="number" min="0" max="100"
-               placeholder="?" autocomplete="off" inputmode="numeric" readonly />
+               placeholder="?" autocomplete="off" inputmode="numeric" />
         <button class="btn btn-primary" id="submit-btn" onclick="submitAnswer()">✓</button>
-      </div>
-      <div class="numpad" id="numpad">
-        <div class="numpad-row">
-          <button class="np-btn" onclick="numpadPress('7')">7</button>
-          <button class="np-btn" onclick="numpadPress('8')">8</button>
-          <button class="np-btn" onclick="numpadPress('9')">9</button>
-        </div>
-        <div class="numpad-row">
-          <button class="np-btn" onclick="numpadPress('4')">4</button>
-          <button class="np-btn" onclick="numpadPress('5')">5</button>
-          <button class="np-btn" onclick="numpadPress('6')">6</button>
-        </div>
-        <div class="numpad-row">
-          <button class="np-btn" onclick="numpadPress('1')">1</button>
-          <button class="np-btn" onclick="numpadPress('2')">2</button>
-          <button class="np-btn" onclick="numpadPress('3')">3</button>
-        </div>
-        <div class="numpad-row">
-          <button class="np-btn np-wide" onclick="numpadPress('0')">0</button>
-          <button class="np-btn np-del" onclick="numpadPress('del')">⌫</button>
-        </div>
       </div>
       <div class="choice-row" id="choice-row" style="display:none">
         <button class="choice-btn" onclick="submitChoice(this)"></button>
@@ -541,8 +661,7 @@
       <div class="feedback-row" id="feedback-row"></div>
       <div class="timer-display" id="timer-display">⏱ 0.0s</div>
     </div>
-    <button class="btn btn-secondary" onclick="confirmQuit()">← Quit</button>
-  </div>
+    </div>
 
   <!-- RESULTS SCREEN -->
   <div class="screen" id="screen-results">
@@ -602,6 +721,17 @@
     <div class="wrong-overlay-content">
       <div class="wrong-eq" id="wrong-eq"></div>
       <div style="color:var(--text2);font-size:1rem;margin-top:8px">Remember this one! 💡</div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-content">
+      <div class="confirm-title" id="confirm-title">Quit this round?</div>
+      <div class="confirm-text" id="confirm-text">Any unsaved answers for this question will be kept private.</div>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary" id="confirm-cancel-btn" onclick="hideConfirmOverlay()">Keep Playing</button>
+        <button class="btn btn-blue" id="confirm-accept-btn" onclick="confirmQuitAction()">Quit Round</button>
+      </div>
     </div>
   </div>
 
@@ -692,10 +822,10 @@ function renderHome() {
       ? `background:linear-gradient(135deg,${lvl.color}22,${lvl.color}44);border-color:${lvl.color}55;color:${lvl.color}`
       : '';
     if(unlocked) {
-      btn.innerHTML = `<div class="lvl-num">${i+1}</div><div class="lvl-name">${lvl.friendly}</div><div class="lvl-sub">${lvl.name}</div><div class="lvl-stars">${stars}</div>`;
+      btn.innerHTML = `<div class="lvl-num">${i+1}</div><div class="lvl-name">${lvl.friendly}</div><div class="lvl-sub">${lvl.name}</div><div class="lvl-hint">${lvl.hint || 'Tap to start'}</div><div class="lvl-stars">${stars}</div>`;
       btn.onclick = () => startLevel(i);
     } else {
-      btn.innerHTML = `<div class="lvl-num" style="opacity:.3">${i+1}</div>`;
+      btn.innerHTML = `<div class="lvl-num" style="opacity:.3">${i+1}</div><div class="lvl-name" style="margin-top:8px">Locked</div>`;
     }
     grid.appendChild(btn);
   });
@@ -771,7 +901,6 @@ function loadQuestion() {
   // Show/hide type vs choice UI
   const isChoice = answerMode === 'choice';
   document.getElementById('answer-row').style.display = isChoice ? 'none' : '';
-  document.getElementById('numpad').style.display = isChoice ? 'none' : '';
   document.getElementById('choice-row').style.display = isChoice ? '' : 'none';
   document.getElementById('submit-btn').style.display = isChoice ? 'none' : '';
 
@@ -988,7 +1117,35 @@ function nextLevel() { startLevel(gameState.currentLevel + 1); }
 function retryLevel() { startLevel(gameState.currentLevel); }
 function goHome() { showScreen('home'); renderHome(); }
 function confirmQuit() {
-  if(confirm('Quit this round?')) goHome();
+  const o = document.getElementById('confirm-overlay');
+  document.getElementById('confirm-title').textContent = 'Quit this round?';
+  document.getElementById('confirm-text').textContent = 'Want to leave now? Your progress is saved and your streak will continue when you return.';
+  document.getElementById('confirm-accept-btn').textContent = 'Quit Round';
+  document.getElementById('confirm-accept-btn').onclick = confirmQuitAction;
+  document.getElementById('confirm-cancel-btn').textContent = 'Keep Playing';
+  document.getElementById('confirm-cancel-btn').onclick = hideConfirmOverlay;
+  o.style.display = 'flex';
+}
+function confirmQuitAction() {
+  hideConfirmOverlay();
+  goHome();
+}
+function showResetConfirm() {
+  const o = document.getElementById('confirm-overlay');
+  document.getElementById('confirm-title').textContent = 'Reset all progress?';
+  document.getElementById('confirm-text').textContent = 'This clears all level unlocks, streak history, and coins. This action cannot be undone.';
+  document.getElementById('confirm-accept-btn').textContent = 'Reset';
+  document.getElementById('confirm-accept-btn').onclick = function(){ confirmResetAll(); };
+  document.getElementById('confirm-cancel-btn').textContent = 'Cancel';
+  document.getElementById('confirm-cancel-btn').onclick = hideConfirmOverlay;
+  o.style.display = 'flex';
+}
+function confirmResetAll() {
+  hideConfirmOverlay();
+  resetAll();
+}
+function hideConfirmOverlay() {
+  document.getElementById('confirm-overlay').style.display = 'none';
 }
 
 /* ===================== STATS ===================== */
@@ -1124,17 +1281,6 @@ function showScreen(name) {
   document.getElementById('screen-'+name).classList.add('active');
 }
 
-/* ===================== NUMPAD ===================== */
-function numpadPress(val) {
-  const input = document.getElementById('answer-input');
-  if (val === 'del') {
-    input.value = input.value.slice(0, -1);
-  } else {
-    if (input.value.length >= 3) return;
-    input.value += val;
-  }
-}
-
 /* ===================== KEYBOARD ===================== */
 document.getElementById('answer-input').addEventListener('keydown', e => {
   if(e.key === 'Enter') submitAnswer();
@@ -1148,13 +1294,49 @@ document.getElementById('answer-input').addEventListener('input', function() {
 
 /* ===================== INIT ===================== */
 answerMode = localStorage.getItem('mm_mode') || 'type';
+let reduceMotion = localStorage.getItem('mm_motion') === '1';
+if (reduceMotion) {
+  document.body.classList.add('motion-off');
+}
 if (localStorage.getItem('mm_theme') === 'light') {
   document.body.classList.add('light');
 }
+function updateModeText() {
+  const btn = document.getElementById('mode-toggle');
+  if (btn) btn.textContent = answerMode === 'type' ? '⌨️ Type' : '🔘 Pick';
+}
+function updateMotionButton() {
+  const motionBtn = document.getElementById('motion-btn');
+  if (motionBtn) motionBtn.textContent = reduceMotion ? '🎬 Motion OFF' : '🎬 Motion ON';
+}
+function toggleMode() {
+  answerMode = answerMode === 'type' ? 'choice' : 'type';
+  updateModeText();
+  localStorage.setItem('mm_mode', answerMode);
+}
+function toggleMotion() {
+  reduceMotion = !reduceMotion;
+  document.body.classList.toggle('motion-off', reduceMotion);
+  updateMotionButton();
+  localStorage.setItem('mm_motion', reduceMotion ? '1' : '0');
+}
+function updateProgress() {
+  const done = gameState.qIndex;
+  const pct = (done / TOTAL_Q) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${done}/${TOTAL_Q} done`;
+  document.getElementById('streak-badge').textContent = `🔥 ${gameState.streak}`;
+  const qCount = document.getElementById('question-count');
+  if (qCount) qCount.textContent = `Q ${Math.min(done + 1, TOTAL_Q)}/${TOTAL_Q}`;
+}
 renderHome();
-// Update mode button label on init
-const modeBtn = document.getElementById('mode-toggle');
-if (modeBtn) modeBtn.textContent = answerMode === 'type' ? '⌨️ Type' : '🔘 Pick';
+updateModeText();
+updateMotionButton();
 </script>
 </body>
 </html>
+
+
+
+
+
