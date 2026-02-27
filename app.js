@@ -920,6 +920,7 @@ renderHome();
 updateModeText();
 updateFastModeButton();
 initAppControls();
+showScreen(APP_SCREEN.HOME);
 
 
 
